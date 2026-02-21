@@ -22,22 +22,24 @@ jobs:
         with:
           persist-credentials: true
 
+      # -------- Python (cached) --------
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      # -------- Node (cached) --------
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - name: Install Python deps
-        run: pip install -r requirements.txt
-
-      # Cache Playwright browsers (huge speedup after first run)
+      # -------- Playwright browsers cache --------
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
@@ -47,10 +49,14 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Install Node deps
-        run: npm ci || npm install
+        run: npm ci
 
+      # First run may still download Chromium; later runs restore from cache
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
+
+      # If you ever see missing libraries error, switch to:
+      # run: npx playwright install --with-deps chromium
 
       - name: Run bot
         env:
@@ -63,9 +69,10 @@ jobs:
           DRY_RUN: "0"
           DEBUG: "1"
           SHOW_STATS: "0"
-          # For quick end-to-end test (uncomment temporarily):
+          # For quick end-to-end test (temporarily):
           # FORCE_TEST: "1"
           # TWEET_THRESHOLD: "2"
+          # DRY_RUN: "1"
         run: python bot.py
 
       - name: Commit updated state.json
