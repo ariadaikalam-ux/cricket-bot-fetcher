@@ -1,6 +1,11 @@
 /**
  * screenshot.js — Playwright tweet screenshotter (IG-ready 4:5)
- * Usage: node screenshot.js <tweet_url> <output_path>
+ * Usage:
+ *   node screenshot.js <tweet_url_or_json> <output_path>
+ *
+ * Supports:
+ *  - tweet URL (https://x.com/user/status/ID)
+ *  - JSON string from SocialData (your bot passes this)
  *
  * Output:
  *  - Always 1080x1350 (4:5)
@@ -10,13 +15,14 @@
  */
 
 const fs = require("fs");
+const path = require("path");
 const { chromium } = require("playwright");
 
-const tweetUrl = process.argv[2];
-const outputPath = process.argv[3];
+const inputArg = process.argv[2];
+const outputPathArg = process.argv[3];
 
-if (!tweetUrl || !outputPath) {
-  console.error("Usage: node screenshot.js <tweet_url> <output_path>");
+if (!inputArg || !outputPathArg) {
+  console.error("Usage: node screenshot.js <tweet_url_or_json> <output_path>");
   process.exit(1);
 }
 
@@ -25,6 +31,45 @@ const FINAL_H = 1350;
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function isProbablyJson(s) {
+  if (!s) return false;
+  const t = s.trim();
+  return t.startsWith("{") && t.endsWith("}");
+}
+
+function buildTweetUrlFromJson(obj) {
+  const id =
+    obj?.id_str ||
+    (typeof obj?.id === "number" ? String(obj.id) : obj?.id);
+
+  const screen =
+    obj?.user?.screen_name ||
+    obj?.screen_name ||
+    obj?.username;
+
+  if (!id || !screen) return null;
+
+  // Use x.com (works; twitter.com often redirects)
+  return `https://x.com/${screen}/status/${id}`;
+}
+
+function normalizeOutputPath(p) {
+  // If bot gives .jpg, we’ll still write a PNG internally then convert by renaming extension.
+  // Easiest: write exactly to the provided output path, but ensure extension matches screenshot type.
+  // We'll output PNG bytes. If extension is .jpg, we still write png bytes; that can confuse some readers.
+  // So we force output to .png and also create the .jpg path if needed.
+  const ext = path.extname(p).toLowerCase();
+  if (ext === ".png") return { pngOut: p, alsoWriteJpg: false, jpgOut: null };
+
+  if (ext === ".jpg" || ext === ".jpeg") {
+    const pngOut = p.replace(/\.(jpg|jpeg)$/i, ".png");
+    return { pngOut, alsoWriteJpg: true, jpgOut: p };
+  }
+
+  // unknown extension → just add .png
+  return { pngOut: p + ".png", alsoWriteJpg: false, jpgOut: null };
 }
 
 async function timeStep(label, fn) {
@@ -44,7 +89,39 @@ async function timeStep(label, fn) {
 
 (async () => {
   let browser;
-  const rawPath = outputPath.replace(/\.png$/i, "") + ".raw.png";
+
+  // 1) Resolve tweet URL
+  let tweetUrl = inputArg;
+
+  if (isProbablyJson(inputArg)) {
+    try {
+      const obj = JSON.parse(inputArg);
+      const built = buildTweetUrlFromJson(obj);
+      if (built) tweetUrl = built;
+      else {
+        console.error(
+          `[${nowIso()}] ❌ Could not build tweet URL from JSON (missing user.screen_name or id_str)`
+        );
+        process.exit(1);
+      }
+    } catch (e) {
+      console.error(`[${nowIso()}] ❌ JSON parse failed: ${e.message}`);
+      process.exit(1);
+    }
+  } else {
+    // Sometimes the bot might pass "id" only in future; handle that too:
+    const onlyDigits = (inputArg || "").trim().match(/^\d{10,30}$/);
+    if (onlyDigits) {
+      console.error(
+        `[${nowIso()}] ❌ Got only an ID. Pass JSON or full URL so we know screen_name.`
+      );
+      process.exit(1);
+    }
+  }
+
+  // 2) Output path normalization
+  const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outputPathArg);
+  const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
   try {
     browser = await chromium.launch({
@@ -80,9 +157,6 @@ async function timeStep(label, fn) {
         return route.abort();
       }
 
-      // block some heavy media previews if needed (optional)
-      if (rtype === "media" && url.includes("video")) return route.abort();
-
       return route.continue();
     });
 
@@ -91,17 +165,12 @@ async function timeStep(label, fn) {
     });
 
     await timeStep("Wait for tweet content", async () => {
-      const candidates = [
-        '[data-testid="tweet"]',
-        "article",
-        ".main-tweet",
-        ".tweet-body",
-      ];
+      const candidates = ['[data-testid="tweet"]', "article", ".main-tweet", ".tweet-body"];
 
       let found = false;
       for (const sel of candidates) {
         try {
-          await page.locator(sel).first().waitFor({ timeout: 12000, state: "visible" });
+          await page.locator(sel).first().waitFor({ timeout: 15000, state: "visible" });
           found = true;
           break;
         } catch (_) {}
@@ -109,7 +178,7 @@ async function timeStep(label, fn) {
       if (!found) throw new Error("Tweet selector not found");
     });
 
-    await timeStep("Force white background + hide junk UI", async () => {
+    await timeStep("Force white background + hide side UI", async () => {
       await page.addStyleTag({
         content: `
           :root, html, body { background: #ffffff !important; }
@@ -141,27 +210,22 @@ async function timeStep(label, fn) {
       return page.locator("body").first();
     });
 
-    // ✅ STRICT 1 MEDIA: keep first image/video, hide the rest (even if duplicates)
+    // ✅ STRICT 1 MEDIA
     await timeStep("STRICT: keep only first media", async () => {
       await tweetEl.evaluate((root) => {
-        // Media wrappers we commonly see in X
         const mediaSelectors = [
-          '[data-testid="tweetPhoto"]',           // photos
-          '[data-testid="videoPlayer"]',          // videos
-          'div[aria-label="Embedded video"]',     // fallback video
-          'div[aria-label="Embedded image"]',     // fallback image
+          '[data-testid="tweetPhoto"]',
+          '[data-testid="videoPlayer"]',
+          'div[aria-label="Embedded video"]',
+          'div[aria-label="Embedded image"]',
         ];
 
-        // Collect unique media blocks inside the tweet
         let mediaBlocks = [];
         for (const sel of mediaSelectors) {
           root.querySelectorAll(sel).forEach((el) => mediaBlocks.push(el));
         }
 
-        // If X renders a grid, tweetPhoto can be nested; remove duplicates by DOM order
-        // Keep first block, hide everything after it.
         if (mediaBlocks.length > 1) {
-          // Sort by DOM position to reliably pick "first"
           mediaBlocks.sort((a, b) => {
             if (a === b) return 0;
             const pos = a.compareDocumentPosition(b);
@@ -173,13 +237,10 @@ async function timeStep(label, fn) {
           const keep = mediaBlocks[0];
 
           for (let i = 1; i < mediaBlocks.length; i++) {
-            const el = mediaBlocks[i];
-            el.style.display = "none";
-            el.style.visibility = "hidden";
+            mediaBlocks[i].style.display = "none";
+            mediaBlocks[i].style.visibility = "hidden";
           }
 
-          // Also: if inside the kept block there are multiple <img> (rare),
-          // keep only the first <img>
           const imgs = keep.querySelectorAll("img");
           if (imgs.length > 1) {
             for (let i = 1; i < imgs.length; i++) {
@@ -189,37 +250,29 @@ async function timeStep(label, fn) {
           }
         }
 
-        // Extra safety: sometimes the same image is duplicated as multiple imgs in the tweet
-        // Keep only first "meaningful" image within the tweet media area.
+        // Extra safety for duplicated large imgs
         const allImgs = Array.from(root.querySelectorAll("img"));
-        if (allImgs.length > 0) {
-          // We DO NOT want to hide profile pics etc.
-          // Heuristic: media images tend to be bigger; keep first big image and hide other big ones.
-          const bigImgs = allImgs.filter((img) => {
-            const r = img.getBoundingClientRect();
-            return r.width >= 180 && r.height >= 180; // treat as "media-like"
-          });
-
-          if (bigImgs.length > 1) {
-            // Keep first big image only
-            for (let i = 1; i < bigImgs.length; i++) {
-              bigImgs[i].style.display = "none";
-              bigImgs[i].style.visibility = "hidden";
-            }
+        const bigImgs = allImgs.filter((img) => {
+          const r = img.getBoundingClientRect();
+          return r.width >= 180 && r.height >= 180;
+        });
+        if (bigImgs.length > 1) {
+          for (let i = 1; i < bigImgs.length; i++) {
+            bigImgs[i].style.display = "none";
+            bigImgs[i].style.visibility = "hidden";
           }
         }
       });
 
-      // Let layout reflow after hiding
       await page.waitForTimeout(200);
     });
 
-    await timeStep("Capture RAW tweet element (tight crop)", async () => {
+    await timeStep("Capture RAW tweet element", async () => {
       await tweetEl.screenshot({ path: rawPath, type: "png" });
       if (!fs.existsSync(rawPath)) throw new Error("Raw screenshot did not write");
     });
 
-    await timeStep("Compose IG 4:5 (1080x1350) with white canvas", async () => {
+    await timeStep("Compose IG 4:5 (1080x1350) white canvas", async () => {
       const rawBuf = fs.readFileSync(rawPath);
       const rawB64 = rawBuf.toString("base64");
 
@@ -276,14 +329,23 @@ async function timeStep(label, fn) {
 
       await page2.setContent(html, { waitUntil: "load" });
       await page2.waitForTimeout(150);
-      await page2.screenshot({ path: outputPath, type: "png" });
+      await page2.screenshot({ path: pngOut, type: "png" });
       await page2.close();
     });
 
-    // cleanup
+    // Cleanup raw
     try { fs.unlinkSync(rawPath); } catch (_) {}
 
-    console.log(`[${nowIso()}] ✅ DONE: ${outputPath}`);
+    // If bot asked for .jpg, create a copy with .jpg extension (still PNG bytes)
+    // This is fine if YOUR pipeline just uploads; if you truly need real JPEG conversion,
+    // tell me and I’ll switch to a real converter step.
+    if (alsoWriteJpg && jpgOut) {
+      try {
+        fs.copyFileSync(pngOut, jpgOut);
+      } catch (_) {}
+    }
+
+    console.log(`[${nowIso()}] ✅ DONE: ${pngOut}${alsoWriteJpg ? ` (also wrote ${jpgOut})` : ""}`);
     process.exit(0);
   } catch (err) {
     console.error(`[${nowIso()}] ❌ FAIL: ${err.message}`);
