@@ -12,7 +12,7 @@
  *   ...
  * ]
  *
- * Output:
+ * Output
  * - Always 1080x1350 (4:5)
  * - White background
  * - Tweet card centered and scaled
