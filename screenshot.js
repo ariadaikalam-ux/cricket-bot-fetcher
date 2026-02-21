@@ -213,83 +213,83 @@ async function timeStep(label, fn) {
     // ✅ STRICT 1 MEDIA
     // ✅ STRICT 1 MEDIA (but FIX multi-media blank-half by collapsing grid)
 // ✅ STRICT: keep only first media + collapse grid to single column
-await timeStep("STRICT: keep only first media", async () => {
+// ✅ DEDUPE ONLY: don't duplicate the same media; keep real multi-media
+await timeStep("DEDUP: hide only duplicate media (keep real multi-media)", async () => {
   await tweetEl.evaluate((root) => {
-    const selectors = [
-      '[data-testid="tweetPhoto"]',
-      '[data-testid="videoPlayer"]',
-      'div[aria-label="Embedded video"]',
-      'div[aria-label="Embedded image"]',
-    ];
-    let blocks = [];
+    // Canonicalize URLs so same image with different params counts as "same"
+    const canon = (u) => {
+      if (!u) return "";
+      try {
+        const url = new URL(u, location.href);
+        // Keep host+path only; ignore query params that often change
+        return `${url.host}${url.pathname}`.toLowerCase();
+      } catch {
+        return String(u).split("?")[0].toLowerCase();
+      }
+    };
 
-    for (const sel of selectors) {
-      root.querySelectorAll(sel).forEach(el => blocks.push(el));
-    }
-    if (blocks.length <= 1) return;
+    // Find all media "tiles" X uses
+    const tiles = Array.from(
+      root.querySelectorAll('[data-testid="tweetPhoto"], [data-testid="videoPlayer"], div[aria-label="Embedded video"], div[aria-label="Embedded image"]')
+    );
 
-    // sort in DOM order
-    blocks.sort((a, b) => {
-      if (a === b) return 0;
-      const pos = a.compareDocumentPosition(b);
-      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
-      if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
-      return 0;
-    });
+    if (!tiles.length) return;
 
-    const keep = blocks[0];
+    // Extract a "signature" per tile (img src / currentSrc / video poster)
+    const tileSig = (tile) => {
+      // Prefer visible large image in this tile
+      const imgs = Array.from(tile.querySelectorAll("img"));
+      if (imgs.length) {
+        // Choose the largest currently rendered image
+        let best = imgs[0];
+        let bestArea = 0;
+        for (const img of imgs) {
+          const r = img.getBoundingClientRect();
+          const area = r.width * r.height;
+          if (area > bestArea) {
+            bestArea = area;
+            best = img;
+          }
+        }
+        return canon(best.currentSrc || best.src);
+      }
 
-    // hide rest
-    for (let i = 1; i < blocks.length; i++) {
-      blocks[i].style.display = "none";
-      blocks[i].style.visibility = "hidden";
-    }
+      const vid = tile.querySelector("video");
+      if (vid) {
+        return canon(vid.poster || vid.currentSrc || vid.src);
+      }
 
-    // also hide extra img if inside the same block
-    const imgsInside = keep.querySelectorAll("img");
-    if (imgsInside.length > 1) {
-      for (let i = 1; i < imgsInside.length; i++) {
-        imgsInside[i].style.display = "none";
-        imgsInside[i].style.visibility = "hidden";
+      return "";
+    };
+
+    // 1) Within each tile, hide duplicate <img> elements that refer to same media
+    for (const tile of tiles) {
+      const imgs = Array.from(tile.querySelectorAll("img"));
+      const seen = new Set();
+      for (const img of imgs) {
+        const sig = canon(img.currentSrc || img.src);
+        if (!sig) continue;
+        if (seen.has(sig)) {
+          img.style.display = "none";
+          img.style.visibility = "hidden";
+        } else {
+          seen.add(sig);
+        }
       }
     }
 
-    // === COLLAPSE GRID == //
+    // 2) Across tiles, hide tiles that are duplicates of earlier tiles (same media)
+    const seenTile = new Set();
+    for (const tile of tiles) {
+      const sig = tileSig(tile);
+      if (!sig) continue;
 
-    // find the grid/flex parent (likely two columns)
-    let grid = keep.parentElement;
-    while (grid && grid !== root) {
-      const style = window.getComputedStyle(grid);
-      if (
-        style.display.startsWith("grid") ||
-        style.display.startsWith("flex")
-      ) {
-        break;
+      if (seenTile.has(sig)) {
+        tile.style.display = "none";
+        tile.style.visibility = "hidden";
+      } else {
+        seenTile.add(sig);
       }
-      grid = grid.parentElement;
-    }
-
-    if (grid && grid !== root) {
-      // If grid: force 1 column
-      grid.style.display = "block";
-      grid.style.gridTemplateColumns = "none";
-      grid.style.gridAutoFlow = "row";
-      grid.style.flexDirection = "column";
-      grid.style.width = "100%";
-    }
-
-    // make kept tile take full width
-    keep.style.display = "block";
-    keep.style.width = "100%";
-    keep.style.maxWidth = "100%";
-
-    // adjust image inside kept tile
-    const img = keep.querySelector("img");
-    if (img) {
-      img.style.width = "100%";
-      img.style.height = "auto";
-      img.style.maxWidth = "100%";
-      img.style.display = "block";
     }
   });
 
