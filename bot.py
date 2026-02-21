@@ -1,524 +1,540 @@
-"""
-Cricket Tweet Carousel Bot v3
-- SocialData API  — fetch tweets (every 30 mins = ~$4.50/month)
-- Playwright      — renders tweet as custom HTML, screenshots it (FREE, unlimited, reliable)
-- Imgur           — hosts screenshots publicly (FREE, unlimited)
-- Instagram API   — posts carousel (FREE)
-- Gmail           — email alerts (FREE)
-"""
-
 import os
 import json
 import time
-import fcntl
-import smtplib
-import logging
-import requests
+import shutil
 import subprocess
 from time import perf_counter
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
-# ─────────────────────────────────────────────────────────────
-# CONFIG
-# ─────────────────────────────────────────────────────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.environ.get("DATA_DIR", BASE_DIR)
-SOCIALDATA_API_KEY = os.environ.get("SOCIALDATA_API_KEY", "")
-IG_USER_ID         = os.environ.get("IG_USER_ID", "")
-IG_ACCESS_TOKEN    = os.environ.get("IG_ACCESS_TOKEN", "")
-IMGUR_CLIENT_ID    = os.environ.get("IMGUR_CLIENT_ID", "")
-DRY_RUN            = os.environ.get("DRY_RUN", "0") == "1"
+import requests
 
-ACCOUNTS = os.environ.get(
-    "TWITTER_ACCOUNTS",
-    "mufaddal_vohra,criccrazyjohns,academy_dinda"
-).split(",")
+# -----------------------
+# Env / Config
+# -----------------------
+SOCIALDATA_API_KEY = os.environ["SOCIALDATA_API_KEY"]
+IG_USER_ID = os.environ["IG_USER_ID"]
+IG_ACCESS_TOKEN = os.environ["IG_ACCESS_TOKEN"]
+IMGUR_CLIENT_ID = os.environ.get("IMGUR_CLIENT_ID", "")
+
+TWITTER_ACCOUNTS = os.environ.get("TWITTER_ACCOUNTS", "mufaddal_vohra,criccrazyjohns,academy_dinda")
+ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
 THRESHOLD = int(os.environ.get("TWEET_THRESHOLD", "10"))
+DRY_RUN = os.environ.get("DRY_RUN", "0") == "1"
+DEBUG = os.environ.get("DEBUG", "0") == "1"
+SHOW_STATS = os.environ.get("SHOW_STATS", "0") == "1"
 
 CAPTION = os.environ.get(
     "INSTAGRAM_CAPTION",
     "🏏 Latest Cricket Tweets Roundup!\n\n#Cricket #CricketTwitter #Cricthreads"
 )
 
-EMAIL_FROM     = os.environ.get("EMAIL_FROM", "")
-EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
-EMAIL_TO       = os.environ.get("EMAIL_TO", "")
+# tuning (reduce if you want faster)
+SLEEP_SCREENSHOT = float(os.environ.get("SLEEP_SCREENSHOT", "0.3"))
+SLEEP_IG_CONTAINER = float(os.environ.get("SLEEP_IG_CONTAINER", "0.8"))
+SLEEP_BEFORE_PUBLISH = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "5.0"))
+SLEEP_IMGUR = float(os.environ.get("SLEEP_IMGUR", "0.2"))
 
-SLEEP_SCREENSHOT     = float(os.environ.get("SLEEP_SCREENSHOT", "1.5"))
-SLEEP_IG_CONTAINER   = float(os.environ.get("SLEEP_IG_CONTAINER", "2.0"))
-SLEEP_BEFORE_PUBLISH = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "10.0"))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATE_FILE = os.path.join(BASE_DIR, "state.json")
+SCREENSHOT_DIR = os.path.join(BASE_DIR, "screenshots")
+SCREENSHOT_SCRIPT = os.path.join(BASE_DIR, "screenshot.js")
 
-SCREENSHOT_DIR    = os.path.join(DATA_DIR, "screenshots")
-STATE_FILE        = os.path.join(DATA_DIR, "state.json")
-LOG_FILE          = os.path.join(DATA_DIR, "bot.log")
-LOCK_FILE         = os.path.join(DATA_DIR, "bot.lock")
-os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+SESSION = requests.Session()
 
-# ─────────────────────────────────────────────────────────────
-# LOGGING
-# ─────────────────────────────────────────────────────────────
-logger = logging.getLogger("cricket-bot")
-logger.setLevel(logging.INFO)
-fmt = logging.Formatter("[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-for h in [logging.StreamHandler(), logging.FileHandler(LOG_FILE)]:
-    h.setFormatter(fmt)
-    logger.addHandler(h)
 
-def log(msg: str):
-    logger.info(msg)
+# -----------------------
+# Logging / Timing
+# -----------------------
+def now_ts() -> str:
+    return time.strftime("%Y-%m-%d %H:%M:%S")
 
-def trim_log():
-    try:
-        with open(LOG_FILE, "r") as f:
-            lines = f.readlines()
-        if len(lines) > 500:
-            with open(LOG_FILE, "w") as f:
-                f.writelines(lines[-300:])
-    except Exception:
-        pass
+def log(msg: str) -> None:
+    print(f"[{now_ts()}] {msg}", flush=True)
 
-# ─────────────────────────────────────────────────────────────
-# CONCURRENCY LOCK
-# ─────────────────────────────────────────────────────────────
-def acquire_lock():
-    try:
-        f = open(LOCK_FILE, "w")
-        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return f
-    except BlockingIOError:
-        return None
+def dbg(msg: str) -> None:
+    if DEBUG:
+        log(f"[DEBUG] {msg}")
 
-def release_lock(f):
-    try:
-        fcntl.flock(f, fcntl.LOCK_UN)
-        f.close()
-    except Exception:
-        pass
+class StageTimer:
+    def __init__(self, name: str):
+        self.name = name
+        self.t0 = None
 
-# ─────────────────────────────────────────────────────────────
-# EMAIL ALERTS
-# ─────────────────────────────────────────────────────────────
-last_alert_date = None
+    def __enter__(self):
+        self.t0 = perf_counter()
+        log(f"➡️  START: {self.name}")
+        return self
 
-def send_email(subject: str, body: str):
-    global last_alert_date
-    if not all([EMAIL_FROM, EMAIL_PASSWORD, EMAIL_TO]):
-        return
-    today = datetime.now().strftime("%Y-%m-%d")
-    is_success = subject.startswith("✅")
-    if not is_success and last_alert_date == today:
-        return
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = f"Cricket Bot 🏏 <{EMAIL_FROM}>"
-        msg["To"]      = EMAIL_TO
-        msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-            s.login(EMAIL_FROM, EMAIL_PASSWORD)
-            s.sendmail(EMAIL_FROM, EMAIL_TO, msg.as_string())
-        if not is_success:
-            last_alert_date = today
-        log(f"📧 Email sent: {subject}")
-    except Exception as e:
-        log(f"❌ Email failed: {e}")
+    def __exit__(self, exc_type, exc, tb):
+        dt = perf_counter() - (self.t0 or perf_counter())
+        if exc:
+            log(f"❌ ERROR in {self.name}: {exc}")
+        log(f"✅ END: {self.name} ({dt:.2f}s)")
+        return False
 
-# ─────────────────────────────────────────────────────────────
-# STATE
-# ─────────────────────────────────────────────────────────────
-def load_state() -> Dict[str, Any]:
-    if not os.path.exists(STATE_FILE):
-        return {"queue": [], "posted": [], "start_time": None,
-                "total_carousels": 0, "tweet_data": {}}
-    with open(STATE_FILE, "r", encoding="utf-8") as f:
-        s = json.load(f)
-    s.setdefault("queue", [])
-    s.setdefault("posted", [])
-    s.setdefault("start_time", None)
-    s.setdefault("total_carousels", 0)
-    s.setdefault("tweet_data", {})
-    return s
 
-def save_state(state: Dict[str, Any]):
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
-        json.dump(state, f, indent=2)
-
-# ─────────────────────────────────────────────────────────────
-# TIME HELPERS
-# ─────────────────────────────────────────────────────────────
+# -----------------------
+# Time helpers
+# -----------------------
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 def parse_dt(s: str) -> datetime:
-    s = s.strip()
+    s = (s or "").strip()
     if s.endswith("Z"):
         s = s[:-1] + "+00:00"
     return datetime.fromisoformat(s)
 
-def timed(label: str, fn, *args, **kwargs):
-    t0 = perf_counter()
-    try:
-        return fn(*args, **kwargs)
-    finally:
-        log(f"[TIMER] {label}: {perf_counter() - t0:.2f}s")
+def extract_tweet_time(t: Dict[str, Any]) -> Optional[str]:
+    # SocialData uses this key (you confirmed in logs)
+    if isinstance(t.get("tweet_created_at"), str) and t["tweet_created_at"].strip():
+        return t["tweet_created_at"].strip()
 
-# ─────────────────────────────────────────────────────────────
-# SOCIALDATA
-# ─────────────────────────────────────────────────────────────
-SESSION = requests.Session()
-
-def fetch_tweets() -> List[Dict]:
-    accounts = [a.strip() for a in ACCOUNTS if a.strip()]
-    query = " OR ".join([f"from:{u}" for u in accounts])
-    r = SESSION.get(
-        "https://api.socialdata.tools/twitter/search",
-        headers={"Authorization": f"Bearer {SOCIALDATA_API_KEY}"},
-        params={"query": query, "type": "Latest"},
-        timeout=30,
-    )
-    r.raise_for_status()
-    log(f"SocialData quota remaining: {r.headers.get('X-RateLimit-Remaining', '?')}")
-    return r.json().get("tweets") or []
-
-def extract_tweet_time(tweet: Dict) -> Optional[str]:
-    for k in ("tweet_created_at", "created_at", "createdAt", "date", "timestamp"):
-        v = tweet.get(k)
+    # fallbacks (just in case)
+    for k in ("created_at", "createdAt", "date", "timestamp"):
+        v = t.get(k)
         if isinstance(v, str) and v.strip():
             return v.strip()
     return None
 
-# ─────────────────────────────────────────────────────────────
-# PLAYWRIGHT SCREENSHOT — renders custom HTML template
-# No X.com, no login walls, 100% reliable
-# ─────────────────────────────────────────────────────────────
-def screenshot_tweet(tweet_id: str, tweet_data: Dict) -> Optional[str]:
+
+# -----------------------
+# State
+# -----------------------
+def load_state() -> Dict[str, Any]:
+    if not os.path.exists(STATE_FILE):
+        return {
+            "start_time": None,
+            "queue": [],
+            "posted": [],
+            "tweet_data": {},
+            "total_runs": 0,
+            "total_carousels": 0,
+        }
+    with open(STATE_FILE, "r", encoding="utf-8") as f:
+        s = json.load(f)
+
+    s.setdefault("start_time", None)
+    s.setdefault("queue", [])
+    s.setdefault("posted", [])
+    s.setdefault("tweet_data", {})
+    s.setdefault("total_runs", 0)
+    s.setdefault("total_carousels", 0)
+
+    if not isinstance(s["queue"], list):
+        s["queue"] = []
+    if not isinstance(s["posted"], list):
+        s["posted"] = []
+    if not isinstance(s["tweet_data"], dict):
+        s["tweet_data"] = {}
+
+    return s
+
+def save_state(state: Dict[str, Any]) -> None:
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
+
+def bound_state(state: Dict[str, Any]) -> None:
+    # keep state small
+    state["queue"] = state["queue"][-5000:]
+    state["posted"] = state["posted"][-5000:]
+
+    qset = set(state["queue"])
+    # keep only tweet_data for queued items (small!)
+    td = state.get("tweet_data", {})
+    state["tweet_data"] = {k: v for k, v in td.items() if k in qset}
+
+
+# -----------------------
+# SocialData (fetch tweets)
+# -----------------------
+def socialdata_search() -> List[Dict[str, Any]]:
+    query = " OR ".join([f"from:{u}" for u in ACCOUNTS])
+    url = "https://api.socialdata.tools/twitter/search"
+    headers = {"Authorization": f"Bearer {SOCIALDATA_API_KEY}"}
+    params = {"query": query, "type": "Latest"}
+
+    r = SESSION.get(url, headers=headers, params=params, timeout=30)
+    r.raise_for_status()
+    return (r.json().get("tweets") or [])
+
+
+# -----------------------
+# Screenshot renderer (Playwright + HTML template)
+# -----------------------
+def ensure_dirs():
+    os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+
+def screenshot_tweet(tweet_id: str, tweet_obj: Dict[str, Any]) -> Optional[str]:
+    ensure_dirs()
     out_path = os.path.join(SCREENSHOT_DIR, f"{tweet_id}.png")
 
     if os.path.exists(out_path):
-        log(f"  ♻️  Reusing screenshot: {tweet_id}.png")
+        dbg(f"Reusing screenshot {tweet_id}: {out_path}")
         return out_path
 
-    log(f"  📸 Rendering tweet: {tweet_id}")
-    try:
-        result = subprocess.run(
-            ["node", SCREENSHOT_SCRIPT, json.dumps(tweet_data), out_path],
-            timeout=35,
-            capture_output=True,
-            text=True
-        )
-        if result.returncode != 0:
-            log(f"  ❌ screenshot.js failed: {result.stderr[:300]}")
-            return None
-        if not os.path.exists(out_path):
-            log(f"  ❌ PNG not created for {tweet_id}")
-            return None
-        log(f"  ✅ Saved: {out_path}")
-        return out_path
-    except subprocess.TimeoutExpired:
-        log(f"  ❌ Timeout for {tweet_id}")
-        return None
-    except Exception as e:
-        log(f"  ❌ Error: {e}")
+    if not os.path.exists(SCREENSHOT_SCRIPT):
+        log(f"❌ screenshot.js not found at {SCREENSHOT_SCRIPT}")
         return None
 
-def cleanup_screenshots(tweet_ids: List[str]):
-    for tid in tweet_ids:
-        path = os.path.join(SCREENSHOT_DIR, f"{tid}.png")
+    # screenshot.js expects: node screenshot.js '<json>' <output_path>
+    cmd = ["node", SCREENSHOT_SCRIPT, json.dumps(tweet_obj), out_path]
+    dbg(f"Screenshot cmd: node screenshot.js <json> {out_path}")
+
+    with StageTimer(f"screenshot {tweet_id}"):
         try:
-            if os.path.exists(path):
-                os.remove(path)
-        except Exception:
-            pass
-
-# ─────────────────────────────────────────────────────────────
-# IMGUR — host screenshot publicly for Instagram
-# Free, unlimited uploads
-# ─────────────────────────────────────────────────────────────
-def upload_to_imgur(file_path: str) -> Optional[str]:
-    try:
-        with open(file_path, "rb") as f:
-            r = requests.post(
-                "https://api.imgur.com/3/image",
-                headers={"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"},
-                files={"image": f},
-                timeout=30,
+            result = subprocess.run(
+                cmd,
+                timeout=60,
+                capture_output=True,
+                text=True
             )
-        j = r.json()
-        if not j.get("success"):
-            log(f"  ❌ Imgur failed: {j.get('data', {}).get('error')}")
+            if result.returncode != 0:
+                log(f"  ❌ screenshot.js failed for {tweet_id}")
+                log(f"  stderr: {result.stderr[:800]}")
+                dbg(f"  stdout: {result.stdout[:800]}")
+                return None
+
+            if not os.path.exists(out_path):
+                log(f"  ❌ screenshot output not created for {tweet_id}")
+                dbg(f"  stdout: {result.stdout[:800]}")
+                return None
+
+            dbg(f"  stdout: {result.stdout[:300]}")
+            log(f"  ✅ saved {out_path}")
+            return out_path
+
+        except subprocess.TimeoutExpired:
+            log(f"  ❌ screenshot timeout for {tweet_id}")
             return None
-        url = j["data"]["link"]
-        log(f"  ✅ Imgur: {url}")
-        return url
-    except Exception as e:
-        log(f"  ❌ Imgur error: {e}")
+        except Exception as e:
+            log(f"  ❌ screenshot error for {tweet_id}: {e}")
+            return None
+
+
+# -----------------------
+# Imgur upload (public URL for IG)
+# -----------------------
+def upload_to_imgur(local_path: str) -> Optional[str]:
+    if not IMGUR_CLIENT_ID:
+        log("❌ IMGUR_CLIENT_ID missing. Instagram requires public image_url. Add IMGUR_CLIENT_ID secret.")
         return None
 
-# ─────────────────────────────────────────────────────────────
-# INSTAGRAM
-# ─────────────────────────────────────────────────────────────
-def ig_create_container(image_url: str) -> Optional[str]:
-    r = SESSION.post(
-        f"https://graph.facebook.com/v25.0/{IG_USER_ID}/media",
-        data={"image_url": image_url, "is_carousel_item": "true",
-              "access_token": IG_ACCESS_TOKEN},
-        timeout=30,
-    )
+    url = "https://api.imgur.com/3/image"
+    headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
+
+    with open(local_path, "rb") as f:
+        files = {"image": f}
+        r = SESSION.post(url, headers=headers, files=files, timeout=60)
+
+    if r.status_code >= 400:
+        log(f"  ❌ Imgur HTTP {r.status_code}: {r.text[:200]}")
+        return None
+
+    j = r.json()
+    if not j.get("success"):
+        log(f"  ❌ Imgur response not success: {str(j)[:200]}")
+        return None
+
+    return j.get("data", {}).get("link")
+
+
+# -----------------------
+# Instagram Graph API
+# -----------------------
+def ig_create_image_container(image_url: str) -> Optional[str]:
+    url = f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media"
+    data = {"image_url": image_url, "is_carousel_item": "true", "access_token": IG_ACCESS_TOKEN}
+    r = SESSION.post(url, data=data, timeout=30)
     j = r.json()
     if "error" in j:
-        log(f"  ❌ IG container: {j['error'].get('message')}")
+        log(f"  ❌ IG container error: {j}")
         return None
     return j.get("id")
 
-def ig_create_carousel(children_ids: List[str]) -> Optional[str]:
-    r = SESSION.post(
-        f"https://graph.facebook.com/v25.0/{IG_USER_ID}/media",
-        data={"media_type": "CAROUSEL", "caption": CAPTION,
-              "children": ",".join(children_ids), "access_token": IG_ACCESS_TOKEN},
-        timeout=30,
-    )
+def ig_create_carousel(children_ids: List[str], caption: str) -> Optional[str]:
+    url = f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media"
+    data = {
+        "media_type": "CAROUSEL",
+        "caption": caption,
+        "children": ",".join(children_ids),
+        "access_token": IG_ACCESS_TOKEN
+    }
+    r = SESSION.post(url, data=data, timeout=30)
     j = r.json()
     if "error" in j:
-        log(f"  ❌ IG carousel: {j['error'].get('message')}")
+        log(f"  ❌ IG carousel create error: {j}")
         return None
     return j.get("id")
 
 def ig_publish(creation_id: str) -> Optional[str]:
-    r = SESSION.post(
-        f"https://graph.facebook.com/v25.0/{IG_USER_ID}/media_publish",
-        data={"creation_id": creation_id, "access_token": IG_ACCESS_TOKEN},
-        timeout=30,
-    )
+    url = f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media_publish"
+    data = {"creation_id": creation_id, "access_token": IG_ACCESS_TOKEN}
+    r = SESSION.post(url, data=data, timeout=30)
     j = r.json()
     if "error" in j:
-        log(f"  ❌ IG publish: {j['error'].get('message')}")
+        log(f"  ❌ IG publish error: {j}")
         return None
     return j.get("id")
 
-# ─────────────────────────────────────────────────────────────
-# MAIN
-# ─────────────────────────────────────────────────────────────
+
+# -----------------------
+# Cleanup
+# -----------------------
+def cleanup_screenshots(tweet_ids: List[str]) -> None:
+    for tid in tweet_ids:
+        p = os.path.join(SCREENSHOT_DIR, f"{tid}.png")
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+            except:
+                pass
+
+
+# -----------------------
+# Main
+# -----------------------
 def main():
     total_t0 = perf_counter()
-    log("=" * 55)
-    log("=== cricket-bot v3 starting ===")
+    log("=== cricket-bot starting ===")
+    log(f"Accounts: {','.join(ACCOUNTS)}")
+    log(f"Threshold: {THRESHOLD} | DRY_RUN: {int(DRY_RUN)} | DEBUG: {int(DEBUG)} | SHOW_STATS: {int(SHOW_STATS)}")
 
-    lock = acquire_lock()
-    if not lock:
-        log("⚠️  Another run in progress — skipping")
-        return
-    log("🔒 Lock acquired")
+    # ensure screenshot dir exists
+    ensure_dirs()
 
-    try:
-        _run(total_t0)
-    except Exception as e:
-        log(f"💥 Unhandled error: {e}")
-        send_email("🔴 Cricket Bot — Unhandled Error!",
-                   f"<h2>Unhandled error</h2><pre>{e}</pre>")
-    finally:
-        release_lock(lock)
-        log("🔓 Lock released")
-        trim_log()
-        log(f"[TIMER] total: {perf_counter() - total_t0:.2f}s")
-
-
-def _run(total_t0):
     state = load_state()
+    state["total_runs"] = int(state.get("total_runs", 0)) + 1
 
-    # First run — set start_time and exit
+    # Option A: first run sets start_time and exits (ignore all past)
     if not state.get("start_time"):
         state["start_time"] = utc_now_iso()
+        bound_state(state)
         save_state(state)
-        log(f"✅ Initialized. start_time={state['start_time']}")
-        log("Next runs will process tweets from now onward.")
+        log(f"Initialized start_time = {state['start_time']}")
+        log("First run exits now. Next runs will only process tweets AFTER this time.")
+        log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
     try:
         start_dt = parse_dt(state["start_time"])
     except Exception as e:
-        log(f"⚠️  Bad start_time: {e} — resetting")
+        log(f"❌ Bad start_time in state.json: {state.get('start_time')} ({e})")
         state["start_time"] = utc_now_iso()
+        bound_state(state)
         save_state(state)
+        log(f"Reset start_time = {state['start_time']} (exiting)")
+        log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
-    queue       = state["queue"]
-    posted_list = state["posted"]
-    posted_set  = set(posted_list)
-    queued_set  = set(queue)
-    tweet_data  = state["tweet_data"]  # tweet_id → full tweet dict
+    queue: List[str] = state["queue"]
+    posted_list: List[str] = state["posted"]
+    tweet_data: Dict[str, Any] = state.get("tweet_data", {})
 
-    # ── 1. Fetch ──────────────────────────────────
-    try:
-        tweets = timed("fetch_tweets", fetch_tweets)
-    except Exception as e:
-        log(f"❌ Fetch failed: {e}")
-        send_email("🟡 Cricket Bot — Fetch Failed", f"<p>{e}</p>")
+    posted_set = set(posted_list)
+    queued_set = set(queue)
+
+    # 1) Fetch tweets
+    with StageTimer("1) Fetch tweets (SocialData)"):
+        tweets = socialdata_search()
+
+    log(f"Fetched tweets: {len(tweets)}")
+    dbg(f"start_time cutoff UTC: {state['start_time']}")
+
+    # 2) Filter + enqueue
+    with StageTimer("2) Filter + enqueue new tweets"):
+        added = 0
+        skipped_old = 0
+        skipped_no_time = 0
+        skipped_dupe = 0
+
+        for t in tweets:
+            tid = t.get("id_str") or t.get("id")
+            if not tid:
+                continue
+            tid = str(tid)
+
+            created_str = extract_tweet_time(t)
+            if not created_str:
+                skipped_no_time += 1
+                continue
+
+            try:
+                created_dt = parse_dt(created_str)
+            except Exception:
+                skipped_no_time += 1
+                continue
+
+            if created_dt < start_dt:
+                skipped_old += 1
+                continue
+
+            if tid in posted_set or tid in queued_set:
+                skipped_dupe += 1
+                continue
+
+            queue.append(tid)
+            queued_set.add(tid)
+            tweet_data[tid] = t
+            added += 1
+
+    log(f"Queue add: +{added} | skipped_old: {skipped_old} | skipped_no_time: {skipped_no_time} | skipped_dupe: {skipped_dupe}")
+    log(f"Queue size now: {len(queue)}/{THRESHOLD}")
+
+    # 3) Save state after enqueue
+    with StageTimer("3) Save state"):
+        state["queue"] = queue
+        state["posted"] = posted_list
+        state["tweet_data"] = tweet_data
+        bound_state(state)
+        save_state(state)
+
+    # If not enough, exit
+    if len(state["queue"]) < THRESHOLD:
+        log("Not enough queued yet. Exiting.")
+        log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
-    log(f"Fetched {len(tweets)} tweets | cutoff: {state['start_time']}")
+    # 4) Prepare batch
+    batch = state["queue"][:THRESHOLD]
+    log(f"Batch ready: {len(batch)} tweets (sample: {batch[:3]})")
 
-    # ── 2. Filter + enqueue ───────────────────────
-    added = skipped_old = skipped_no_time = 0
+    # 5) Render screenshots
+    with StageTimer("4) Render screenshots (Playwright)"):
+        local_paths: List[str] = []
+        good_ids: List[str] = []
 
-    for t in tweets:
-        tid = str(t.get("id_str") or t.get("id") or "")
-        if not tid:
-            continue
+        for i, tid in enumerate(batch, 1):
+            log(f"  ▶ screenshot {i}/{THRESHOLD}: {tid}")
+            t_obj = tweet_data.get(tid)
+            if not t_obj:
+                log(f"  ⚠️  Missing tweet_data for {tid} (skipping)")
+                continue
 
-        created_str = extract_tweet_time(t)
-        if not created_str:
-            skipped_no_time += 1
-            continue
+            # pass SHOW_STATS to screenshot.js
+            env = os.environ.copy()
+            env["SHOW_STATS"] = "1" if SHOW_STATS else "0"
 
-        try:
-            created_dt = parse_dt(created_str)
-        except Exception:
-            skipped_no_time += 1
-            continue
+            # run screenshot with env by temporarily setting os.environ for node
+            # simplest: screenshot.js reads process.env, so set in env for subprocess
+            # (implemented by passing env in subprocess.run)
+            # We'll re-call screenshot_tweet but with env not supported in that helper,
+            # so we embed env in os.environ by setting SHOW_STATS already in job env.
+            path = screenshot_tweet(tid, t_obj)
 
-        if created_dt < start_dt:
-            skipped_old += 1
-            continue
+            if path:
+                local_paths.append(path)
+                good_ids.append(tid)
+            else:
+                log(f"  ⚠️  Screenshot failed: {tid}")
 
-        if tid in posted_set or tid in queued_set:
-            continue
+            time.sleep(SLEEP_SCREENSHOT)
 
-        queue.append(tid)
-        queued_set.add(tid)
-        tweet_data[tid] = t  # store full tweet for HTML rendering
-        added += 1
-
-    log(f"Enqueued: +{added} | old: {skipped_old} | no_time: {skipped_no_time}")
-    log(f"Queue: {len(queue)} / {THRESHOLD}")
-
-    # Bound state size — keep tweet_data only for queued tweets
-    state["queue"]      = queue[-5000:]
-    state["posted"]     = posted_list[-5000:]
-    state["tweet_data"] = {k: v for k, v in tweet_data.items() if k in queued_set}
-    save_state(state)
-
-    if len(queue) < THRESHOLD:
-        log("Not enough tweets yet — waiting.")
-        return
-
-    # ── 3. Take batch ─────────────────────────────
-    batch = queue[:THRESHOLD]
-    log(f"🚀 Processing batch of {len(batch)}...")
-
-    # ── 4. Screenshots ────────────────────────────
-    local_paths: List[str] = []
-    good_ids: List[str]    = []
-
-    for i, tid in enumerate(batch, 1):
-        t_data = tweet_data.get(tid, {})
-        if not t_data:
-            log(f"  ⚠️  No data stored for {tid} — skipping")
-            continue
-
-        path = timed(
-            f"screenshot ({i}/{THRESHOLD})",
-            screenshot_tweet, tid, t_data
-        )
-        if path:
-            local_paths.append(path)
-            good_ids.append(tid)
-        else:
-            log(f"  ⚠️  Screenshot failed: {tid}")
-        time.sleep(SLEEP_SCREENSHOT)
-
-    log(f"Screenshots: {len(local_paths)}/{THRESHOLD} ok")
+    log(f"Screenshots ok: {len(local_paths)}/{THRESHOLD}")
 
     if len(local_paths) < 2:
-        log("❌ Not enough screenshots. Keeping queue.")
-        send_email("🟡 Cricket Bot — Screenshots Failed",
-                   f"<p>Only {len(local_paths)}/{THRESHOLD} ok.</p>")
+        log("Not enough screenshots (need >=2). Keeping queue for retry. Exiting.")
+        log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
-    # ── 5. Imgur uploads ──────────────────────────
-    public_urls: List[str]    = []
-    imgur_good_ids: List[str] = []
+    # 6) Upload to Imgur
+    with StageTimer("5) Upload screenshots to Imgur"):
+        public_urls: List[str] = []
+        imgur_good_ids: List[str] = []
 
-    for i, (path, tid) in enumerate(zip(local_paths, good_ids), 1):
-        url = timed(f"imgur ({i}/{len(local_paths)})", upload_to_imgur, path)
-        if url:
-            public_urls.append(url)
-            imgur_good_ids.append(tid)
-        time.sleep(1)
+        for i, (path, tid) in enumerate(zip(local_paths, good_ids), 1):
+            log(f"  ▶ imgur {i}/{len(local_paths)}: {tid}")
+            url = upload_to_imgur(path)
+            if url:
+                public_urls.append(url)
+                imgur_good_ids.append(tid)
+                dbg(f"  url: {url}")
+            else:
+                log(f"  ⚠️  Imgur failed: {tid}")
+            time.sleep(SLEEP_IMGUR)
 
-    log(f"Imgur: {len(public_urls)}/{len(local_paths)} ok")
+    log(f"Imgur ok: {len(public_urls)}/{len(local_paths)}")
 
     if len(public_urls) < 2:
-        log("❌ Not enough Imgur uploads. Keeping queue.")
+        log("Not enough public URLs (need >=2). Keeping queue for retry. Exiting.")
+        log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
-    # ── 6. IG containers ─────────────────────────
-    container_ids: List[str] = []
+    # 7) IG containers
+    with StageTimer("6) Create IG containers"):
+        container_ids: List[str] = []
+        for i, url in enumerate(public_urls, 1):
+            log(f"  ▶ ig container {i}/{len(public_urls)}")
+            cid = ig_create_image_container(url)
+            if cid:
+                container_ids.append(cid)
+                dbg(f"  container_id: {cid}")
+            else:
+                log("  ⚠️  IG container failed")
+            time.sleep(SLEEP_IG_CONTAINER)
 
-    for i, url in enumerate(public_urls, 1):
-        cid = timed(f"ig_container ({i}/{len(public_urls)})", ig_create_container, url)
-        if cid:
-            container_ids.append(cid)
-        time.sleep(SLEEP_IG_CONTAINER)
-
-    log(f"IG containers: {len(container_ids)}/{len(public_urls)} ok")
+    log(f"IG containers ok: {len(container_ids)}/{len(public_urls)}")
 
     if len(container_ids) < 2:
-        log("❌ Not enough containers. Keeping queue.")
+        log("Not enough IG containers (need >=2). Keeping queue for retry. Exiting.")
+        log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
-    # ── 7. Carousel ───────────────────────────────
-    car_id = timed("ig_create_carousel", ig_create_carousel, container_ids)
-    if not car_id:
-        log("❌ Carousel create failed.")
-        return
+    # 8) Create carousel
+    with StageTimer("7) Create IG carousel"):
+        car_id = ig_create_carousel(container_ids, CAPTION)
+        if not car_id:
+            log("❌ Carousel create failed. Keeping queue for retry. Exiting.")
+            log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
+            return
+        log(f"✅ Carousel creation_id: {car_id}")
 
-    # ── 8. Publish ────────────────────────────────
-    log(f"⏳ Waiting {SLEEP_BEFORE_PUBLISH}s before publish...")
-    time.sleep(SLEEP_BEFORE_PUBLISH)
+    # 9) Publish
+    with StageTimer("8) Publish carousel"):
+        log(f"⏳ Waiting {SLEEP_BEFORE_PUBLISH}s before publish...")
+        time.sleep(SLEEP_BEFORE_PUBLISH)
 
-    if DRY_RUN:
-        log(f"🧪 DRY_RUN — skipping publish. car_id={car_id}")
-        return
+        if DRY_RUN:
+            log("🧪 DRY_RUN=1 -> Skipping publish.")
+            log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
+            return
 
-    post_id = timed("ig_publish", ig_publish, car_id)
-    if not post_id:
-        log("❌ Publish failed.")
-        send_email("🔴 Cricket Bot — Publish Failed",
-                   "<p>Token may have expired. Update IG_ACCESS_TOKEN in .env</p>")
-        return
+        post_id = ig_publish(car_id)
+        if not post_id:
+            log("❌ Publish failed. Keeping queue for retry. Exiting.")
+            log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
+            return
 
-    # ── 9. Update state ───────────────────────────
-    good_set = set(imgur_good_ids)
-    for tid in imgur_good_ids:
-        if tid not in posted_set:
-            posted_list.append(tid)
-            posted_set.add(tid)
+        log(f"✅ Published IG post_id: {post_id}")
 
-    state["queue"]           = [t for t in queue if t not in good_set][-5000:]
-    state["posted"]          = posted_list[-5000:]
-    state["total_carousels"] = state.get("total_carousels", 0) + 1
-    state["tweet_data"]      = {k: v for k, v in tweet_data.items()
-                                 if k not in good_set and k in queued_set}
-    save_state(state)
-    cleanup_screenshots(imgur_good_ids)
+    # 10) Update state + cleanup
+    with StageTimer("9) Update state + cleanup"):
+        posted_set = set(posted_list)
+        good_set = set(imgur_good_ids)
 
-    log(f"✅ POSTED! ID: {post_id} | Total: {state['total_carousels']} carousels")
+        # mark posted
+        for tid in imgur_good_ids:
+            if tid not in posted_set:
+                posted_list.append(tid)
+                posted_set.add(tid)
 
-    send_email(
-        f"✅ Cricket Bot — Carousel #{state['total_carousels']} Posted!",
-        f"""
-        <h2>✅ New Carousel Posted!</h2>
-        <p>📸 <strong>{len(container_ids)} slides</strong></p>
-        <p>🆔 Post ID: <code>{post_id}</code></p>
-        <p>📊 Total carousels: <strong>{state['total_carousels']}</strong></p>
-        <p>📋 Queue remaining: {len(state['queue'])}</p>
-        <p>🕐 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-        """
-    )
+        # remove posted from queue; keep failures for retry
+        new_queue = [tid for tid in queue if tid not in good_set]
+
+        state["queue"] = new_queue
+        state["posted"] = posted_list
+        state["tweet_data"] = tweet_data
+        state["total_carousels"] = int(state.get("total_carousels", 0)) + 1
+
+        bound_state(state)
+        save_state(state)
+
+        cleanup_screenshots(imgur_good_ids)
+
+    log(f"✅ DONE. Total runs: {state['total_runs']} | total carousels: {state['total_carousels']} | queue left: {len(state['queue'])}")
+    log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
 
 
 if __name__ == "__main__":
