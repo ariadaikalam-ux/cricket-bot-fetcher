@@ -2,12 +2,15 @@ name: cricket-bot
 
 on:
   schedule:
-    - cron: "0 * * * *"   # every 1 hour (UTC)
+    - cron: "0 * * * *"   # every hour (UTC)
   workflow_dispatch:
 
 concurrency:
   group: cricket-bot
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   run:
@@ -23,19 +26,31 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
 
       - name: Install Python deps
         run: pip install -r requirements.txt
 
+      # Cache Playwright browsers (huge speedup after first run)
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Node deps
-        run: |
-          npm install
-          npx playwright install --with-deps chromium
+        run: npm ci || npm install
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run bot
         env:
@@ -46,6 +61,11 @@ jobs:
           TWITTER_ACCOUNTS: "mufaddal_vohra,criccrazyjohns,academy_dinda"
           TWEET_THRESHOLD: "10"
           DRY_RUN: "0"
+          DEBUG: "1"
+          SHOW_STATS: "0"
+          # For quick end-to-end test (uncomment temporarily):
+          # FORCE_TEST: "1"
+          # TWEET_THRESHOLD: "2"
         run: python bot.py
 
       - name: Commit updated state.json
