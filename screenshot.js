@@ -13,7 +13,6 @@
  *  - Tweet card centered and scaled
  *  - STRICT: only 1 media item (keeps first, hides the rest)
  */
-
 const fs = require("fs");
 const path = require("path");
 const { chromium } = require("playwright");
