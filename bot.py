@@ -184,58 +184,101 @@ def socialdata_search() -> List[Dict[str, Any]]:
 
 
 # -----------------------
-# Screenshot renderer (Playwright + HTML template)
+# Screenshot renderer (BATCH mode - single Node run)
 # -----------------------
-def ensure_dirs():
-    os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
-def screenshot_tweet(tweet_id: str, tweet_obj: Dict[str, Any]) -> Optional[str]:
+def screenshot_batch(tweets: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
+    """
+    tweets = { tweet_id: tweet_obj }
+    Returns: { tweet_id: screenshot_path }
+    """
+
     ensure_dirs()
-    out_path = os.path.join(SCREENSHOT_DIR, f"{tweet_id}.jpg")
-
-    if os.path.exists(out_path):
-        dbg(f"Reusing screenshot {tweet_id}: {out_path}")
-        return out_path
 
     if not os.path.exists(SCREENSHOT_SCRIPT):
         log(f"❌ screenshot.js not found at {SCREENSHOT_SCRIPT}")
-        return None
+        return {}
 
-    # screenshot.js expects: node screenshot.js '<json>' <output_path>
-    cmd = ["node", SCREENSHOT_SCRIPT, json.dumps(tweet_obj), out_path]
-    dbg(f"Screenshot cmd: node screenshot.js <json> {out_path}")
+    batch_payload = []
+    id_to_path = {}
 
-    with StageTimer(f"screenshot {tweet_id}"):
+    for tweet_id, tweet_obj in tweets.items():
+        out_path = os.path.join(SCREENSHOT_DIR, f"{tweet_id}.jpg")
+
+        # Skip if already exists
+        if os.path.exists(out_path):
+            dbg(f"Reusing screenshot {tweet_id}")
+            id_to_path[tweet_id] = out_path
+            continue
+
+        # Skip video tweets (fast reject before Node)
+        media = (
+            tweet_obj.get("extended_entities", {}).get("media")
+            or tweet_obj.get("entities", {}).get("media")
+            or []
+        )
+
+        has_video = any(
+            m.get("type") in ("video", "animated_gif") or m.get("video_info")
+            for m in media
+            if isinstance(m, dict)
+        )
+
+        if has_video:
+            dbg(f"Skipping video tweet {tweet_id}")
+            continue
+
+        batch_payload.append({
+            "tweet": tweet_obj,
+            "out": out_path
+        })
+
+    if not batch_payload:
+        return id_to_path
+
+    cmd = [
+        "node",
+        SCREENSHOT_SCRIPT,
+        "--batch",
+        json.dumps(batch_payload)
+    ]
+
+    dbg(f"Batch screenshot: {len(batch_payload)} tweets")
+
+    with StageTimer("Batch screenshots"):
         try:
             result = subprocess.run(
                 cmd,
-                timeout=60,
+                timeout=180,   # allow longer since it's one big run
                 capture_output=True,
                 text=True
             )
+
             if result.returncode != 0:
-                log(f"  ❌ screenshot.js failed for {tweet_id}")
-                log(f"  stderr: {result.stderr[:800]}")
-                dbg(f"  stdout: {result.stdout[:800]}")
-                return None
+                log("❌ screenshot batch failed")
+                log(result.stderr[:1000])
+                return id_to_path
 
-            if not os.path.exists(out_path):
-                log(f"  ❌ screenshot output not created for {tweet_id}")
-                dbg(f"  stdout: {result.stdout[:800]}")
-                return None
+            # Parse batch result line
+            marker = "__BATCH_RESULT__"
+            for line in result.stdout.splitlines():
+                if line.startswith(marker):
+                    data = json.loads(line[len(marker):])
+                    for item in data.get("results", []):
+                        if item.get("ok") and item.get("out"):
+                            tweet_id = os.path.splitext(
+                                os.path.basename(item["out"])
+                            )[0]
+                            id_to_path[tweet_id] = item["out"]
 
-            dbg(f"  stdout: {result.stdout[:300]}")
-            log(f"  ✅ saved {out_path}")
-            return out_path
+            log(f"✅ Screenshots created: {len(id_to_path)}")
 
         except subprocess.TimeoutExpired:
-            log(f"  ❌ screenshot timeout for {tweet_id}")
-            return None
+            log("❌ screenshot batch timeout")
         except Exception as e:
-            log(f"  ❌ screenshot error for {tweet_id}: {e}")
-            return None
+            log(f"❌ screenshot batch error: {e}")
 
-
+    return id_to_path
 # -----------------------
 # Imgur upload (public URL for IG)
 # -----------------------
@@ -425,37 +468,91 @@ def main():
     batch = state["queue"][:THRESHOLD]
     log(f"Batch ready: {len(batch)} tweets (sample: {batch[:3]})")
 
-    # 5) Render screenshots
-    with StageTimer("4) Render screenshots (Playwright)"):
-        local_paths: List[str] = []
-        good_ids: List[str] = []
+# 5) Render screenshots (BATCH: one Node run, one browser)
+with StageTimer("4) Render screenshots (Playwright)"):
+    local_paths: List[str] = []
+    good_ids: List[str] = []
 
-        for i, tid in enumerate(batch, 1):
-            log(f"  ▶ screenshot {i}/{THRESHOLD}: {tid}")
-            t_obj = tweet_data.get(tid)
-            if not t_obj:
-                log(f"  ⚠️  Missing tweet_data for {tid} (skipping)")
-                continue
+    ensure_dirs()
 
-            # pass SHOW_STATS to screenshot.js
+    # Build batch payload for Node
+    batch_payload = []
+    for i, tid in enumerate(batch, 1):
+        log(f"  ▶ prepare {i}/{THRESHOLD}: {tid}")
+        t_obj = tweet_data.get(tid)
+        if not t_obj:
+            log(f"  ⚠️  Missing tweet_data for {tid} (skipping)")
+            continue
+
+        out_path = os.path.join(SCREENSHOT_DIR, f"{tid}.jpg")
+
+        # Reuse if exists
+        if os.path.exists(out_path):
+            dbg(f"Reusing screenshot {tid}: {out_path}")
+            local_paths.append(out_path)
+            good_ids.append(tid)
+            continue
+
+        batch_payload.append({"tweet": t_obj, "out": out_path})
+
+    if batch_payload:
+        if not os.path.exists(SCREENSHOT_SCRIPT):
+            log(f"❌ screenshot.js not found at {SCREENSHOT_SCRIPT}")
+        else:
+            cmd = ["node", SCREENSHOT_SCRIPT, "--batch", json.dumps(batch_payload)]
+            dbg(f"Batch screenshot cmd: node screenshot.js --batch <{len(batch_payload)} items>")
+
             env = os.environ.copy()
             env["SHOW_STATS"] = "1" if SHOW_STATS else "0"
 
-            # run screenshot with env by temporarily setting os.environ for node
-            # simplest: screenshot.js reads process.env, so set in env for subprocess
-            # (implemented by passing env in subprocess.run)
-            # We'll re-call screenshot_tweet but with env not supported in that helper,
-            # so we embed env in os.environ by setting SHOW_STATS already in job env.
-            path = screenshot_tweet(tid, t_obj)
+            try:
+                result = subprocess.run(
+                    cmd,
+                    timeout=240,  # one big run
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                )
 
-            if path:
-                local_paths.append(path)
-                good_ids.append(tid)
-            else:
-                log(f"  ⚠️  Screenshot failed: {tid}")
+                if result.returncode != 0:
+                    log("❌ screenshot batch failed")
+                    log(f"  stderr: {result.stderr[:1200]}")
+                    dbg(f"  stdout: {result.stdout[:1200]}")
+                else:
+                    # Parse machine-readable result line emitted by screenshot.js
+                    marker = "__BATCH_RESULT__"
+                    parsed = False
+                    for line in result.stdout.splitlines():
+                        if line.startswith(marker):
+                            parsed = True
+                            data = json.loads(line[len(marker):])
+                            for item in data.get("results", []):
+                                if item.get("ok") and item.get("out"):
+                                    outp = item["out"]
+                                    tid = os.path.splitext(os.path.basename(outp))[0]
+                                    if os.path.exists(outp):
+                                        local_paths.append(outp)
+                                        good_ids.append(tid)
 
-            time.sleep(SLEEP_SCREENSHOT)
+                    if not parsed:
+                        # fallback: just check files exist
+                        dbg("No __BATCH_RESULT__ line found; falling back to filesystem checks")
+                        for it in batch_payload:
+                            outp = it["out"]
+                            if os.path.exists(outp):
+                                tid = os.path.splitext(os.path.basename(outp))[0]
+                                local_paths.append(outp)
+                                good_ids.append(tid)
 
+                    log(f"  ✅ batch rendered: {len(good_ids)} screenshots")
+                    dbg(f"  stdout: {result.stdout[:600]}")
+
+            except subprocess.TimeoutExpired:
+                log("❌ screenshot batch timeout")
+            except Exception as e:
+                log(f"❌ screenshot batch error: {e}")
+
+    # IMPORTANT: we no longer sleep per tweet, because it's one run now
     log(f"Screenshots ok: {len(local_paths)}/{THRESHOLD}")
 
     if len(local_paths) < 2:
