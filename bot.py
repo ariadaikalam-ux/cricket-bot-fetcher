@@ -16,7 +16,7 @@ IG_USER_ID = os.environ["IG_USER_ID"]
 IG_ACCESS_TOKEN = os.environ["IG_ACCESS_TOKEN"]
 IMGUR_CLIENT_ID = os.environ.get("IMGUR_CLIENT_ID", "")
 
-TWITTER_ACCOUNTS = os.environ.get("TWITTER_ACCOUNTS", "mufaddal_vohra,criccrazyjohns,academy_dinda")
+TWITTER_ACCOUNTS = os.environ.get("TWITTER_ACCOUNTS", "mufaddal_vohra,criccrazyjohns,academy_dinda,breathekohli")
 ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
 THRESHOLD = int(os.environ.get("TWEET_THRESHOLD", "10"))
@@ -26,7 +26,7 @@ SHOW_STATS = os.environ.get("SHOW_STATS", "0") == "1"
 
 CAPTION = os.environ.get(
     "INSTAGRAM_CAPTION",
-    "🏏 Latest Cricket Tweets Roundup!\n\n#Cricket #CricketTwitter #Cricthreads"
+    "🏏 Latest Cricket Tweets Roundup!"
 )
 
 # tuning (reduce if you want faster)
