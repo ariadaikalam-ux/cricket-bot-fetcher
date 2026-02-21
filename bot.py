@@ -42,7 +42,6 @@ SCREENSHOT_SCRIPT = os.path.join(BASE_DIR, "screenshot.js")
 
 SESSION = requests.Session()
 
-
 # -----------------------
 # Logging / Timing
 # -----------------------
