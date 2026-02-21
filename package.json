@@ -1,0 +1,7 @@
+{
+  "name": "cricket-bot",
+  "private": true,
+  "dependencies": {
+    "playwright": "^1.42.1"
+  }
+}
