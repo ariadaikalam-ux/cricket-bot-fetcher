@@ -211,62 +211,98 @@ async function timeStep(label, fn) {
     });
 
     // ✅ STRICT 1 MEDIA
-    await timeStep("STRICT: keep only first media", async () => {
-      await tweetEl.evaluate((root) => {
-        const mediaSelectors = [
-          '[data-testid="tweetPhoto"]',
-          '[data-testid="videoPlayer"]',
-          'div[aria-label="Embedded video"]',
-          'div[aria-label="Embedded image"]',
-        ];
+    // ✅ STRICT 1 MEDIA (but FIX multi-media blank-half by collapsing grid)
+await timeStep("STRICT: keep only first media", async () => {
+  await tweetEl.evaluate((root) => {
+    // 1) Find media tiles in DOM order
+    const mediaSelectors = [
+      '[data-testid="tweetPhoto"]',
+      '[data-testid="videoPlayer"]',
+      'div[aria-label="Embedded video"]',
+      'div[aria-label="Embedded image"]',
+    ];
 
-        let mediaBlocks = [];
-        for (const sel of mediaSelectors) {
-          root.querySelectorAll(sel).forEach((el) => mediaBlocks.push(el));
-        }
+    let mediaBlocks = [];
+    for (const sel of mediaSelectors) {
+      root.querySelectorAll(sel).forEach((el) => mediaBlocks.push(el));
+    }
 
-        if (mediaBlocks.length > 1) {
-          mediaBlocks.sort((a, b) => {
-            if (a === b) return 0;
-            const pos = a.compareDocumentPosition(b);
-            if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
-            if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
-            return 0;
-          });
+    if (mediaBlocks.length <= 1) {
+      // Single media case: do nothing (your current behavior works perfectly)
+      return;
+    }
 
-          const keep = mediaBlocks[0];
-
-          for (let i = 1; i < mediaBlocks.length; i++) {
-            mediaBlocks[i].style.display = "none";
-            mediaBlocks[i].style.visibility = "hidden";
-          }
-
-          const imgs = keep.querySelectorAll("img");
-          if (imgs.length > 1) {
-            for (let i = 1; i < imgs.length; i++) {
-              imgs[i].style.display = "none";
-              imgs[i].style.visibility = "hidden";
-            }
-          }
-        }
-
-        // Extra safety for duplicated large imgs
-        const allImgs = Array.from(root.querySelectorAll("img"));
-        const bigImgs = allImgs.filter((img) => {
-          const r = img.getBoundingClientRect();
-          return r.width >= 180 && r.height >= 180;
-        });
-        if (bigImgs.length > 1) {
-          for (let i = 1; i < bigImgs.length; i++) {
-            bigImgs[i].style.display = "none";
-            bigImgs[i].style.visibility = "hidden";
-          }
-        }
-      });
-
-      await page.waitForTimeout(200);
+    // Sort in DOM order, then keep first
+    mediaBlocks.sort((a, b) => {
+      if (a === b) return 0;
+      const pos = a.compareDocumentPosition(b);
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      return 0;
     });
 
+    const keep = mediaBlocks[0];
+
+    // 2) Hide all other media blocks
+    for (let i = 1; i < mediaBlocks.length; i++) {
+      mediaBlocks[i].style.display = "none";
+      mediaBlocks[i].style.visibility = "hidden";
+    }
+
+    // 3) If the kept block contains multiple imgs, keep only first
+    const imgs = keep.querySelectorAll("img");
+    if (imgs.length > 1) {
+      for (let i = 1; i < imgs.length; i++) {
+        imgs[i].style.display = "none";
+        imgs[i].style.visibility = "hidden";
+      }
+    }
+
+    // 4) CRITICAL FIX:
+    //    Collapse the multi-media grid so it becomes a single full-width item,
+    //    removing the blank half.
+    //
+    // Try to find a reasonable "grid" container above the tile
+    const grid =
+      keep.closest('[data-testid="tweetPhoto"]')?.parentElement ||
+      keep.parentElement;
+
+    if (grid) {
+      // If it's a grid/flex layout, force it to single column
+      grid.style.display = "block";
+      grid.style.gridTemplateColumns = "1fr";
+      grid.style.gridAutoFlow = "row";
+      grid.style.gap = "0px";
+      grid.style.width = "100%";
+      grid.style.maxWidth = "100%";
+    }
+
+    // Make kept tile take full width
+    keep.style.display = "block";
+    keep.style.width = "100%";
+    keep.style.maxWidth = "100%";
+
+    // Make the link wrapper full width if present
+    const a = keep.closest("a");
+    if (a) {
+      a.style.display = "block";
+      a.style.width = "100%";
+      a.style.maxWidth = "100%";
+    }
+
+    // Ensure the kept image itself stretches nicely (no weird half)
+    const firstImg = keep.querySelector("img");
+    if (firstImg) {
+      firstImg.style.display = "block";
+      firstImg.style.width = "100%";
+      firstImg.style.height = "auto";
+      firstImg.style.maxWidth = "100%";
+    }
+  });
+
+  await page.waitForTimeout(200);
+});
+    
     await timeStep("Capture RAW tweet element", async () => {
       await tweetEl.screenshot({ path: rawPath, type: "png" });
       if (!fs.existsSync(rawPath)) throw new Error("Raw screenshot did not write");
