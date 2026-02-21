@@ -169,7 +169,7 @@ def ensure_dirs():
 
 def screenshot_tweet(tweet_id: str, tweet_obj: Dict[str, Any]) -> Optional[str]:
     ensure_dirs()
-    out_path = os.path.join(SCREENSHOT_DIR, f"{tweet_id}.png")
+    out_path = os.path.join(SCREENSHOT_DIR, f"{tweet_id}.jpg")
 
     if os.path.exists(out_path):
         dbg(f"Reusing screenshot {tweet_id}: {out_path}")
