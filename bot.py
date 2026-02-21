@@ -99,7 +99,30 @@ def extract_tweet_time(t: Dict[str, Any]) -> Optional[str]:
             return v.strip()
     return None
 
+def is_video_tweet(t: Dict[str, Any]) -> bool:
+    """
+    Returns True if tweet contains video / animated_gif.
+    SocialData may store media in entities.media or extended_entities.media.
+    """
+    media = []
+    ext = t.get("extended_entities", {})
+    ent = t.get("entities", {})
 
+    if isinstance(ext, dict) and isinstance(ext.get("media"), list):
+        media = ext["media"]
+    elif isinstance(ent, dict) and isinstance(ent.get("media"), list):
+        media = ent["media"]
+
+    for m in media:
+        if not isinstance(m, dict):
+            continue
+        mtype = (m.get("type") or "").lower()
+        if mtype in ("video", "animated_gif"):
+            return True
+        # Some payloads include video_info even if type is inconsistent
+        if "video_info" in m:
+            return True
+    return False
 # -----------------------
 # State
 # -----------------------
@@ -346,6 +369,7 @@ def main():
     # 2) Filter + enqueue
     with StageTimer("2) Filter + enqueue new tweets"):
         added = 0
+        skipped_video = 0
         skipped_old = 0
         skipped_no_time = 0
         skipped_dupe = 0
@@ -360,13 +384,14 @@ def main():
             if not created_str:
                 skipped_no_time += 1
                 continue
-
             try:
                 created_dt = parse_dt(created_str)
             except Exception:
                 skipped_no_time += 1
                 continue
-
+            if is_video_tweet(t):
+                skipped_video += 1
+                continue
             if created_dt < start_dt:
                 skipped_old += 1
                 continue
