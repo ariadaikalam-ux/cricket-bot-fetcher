@@ -2,7 +2,7 @@ name: cricket-bot
 
 on:
   schedule:
-    - cron: "0 * * * *"   # every hour (UTC)
+    - cron: "0 */3 * * *"   # every hour (UTC)
   workflow_dispatch:
 
 concurrency:
