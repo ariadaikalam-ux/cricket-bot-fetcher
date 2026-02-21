@@ -97,7 +97,8 @@ def extract_tweet_time(t: Dict[str, Any]) -> Optional[str]:
         if isinstance(v, str) and v.strip():
             return v.strip()
     return None
-
+def ensure_dirs():
+    os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 def is_video_tweet(t: Dict[str, Any]) -> bool:
     """
     Returns True if tweet contains video / animated_gif.
@@ -350,14 +351,13 @@ def ig_publish(creation_id: str) -> Optional[str]:
 # -----------------------
 def cleanup_screenshots(tweet_ids: List[str]) -> None:
     for tid in tweet_ids:
-        p = os.path.join(SCREENSHOT_DIR, f"{tid}.png")
-        if os.path.exists(p):
-            try:
-                os.remove(p)
-            except:
-                pass
-
-
+        for ext in (".jpg", ".jpeg", ".png"):
+            p = os.path.join(SCREENSHOT_DIR, f"{tid}{ext}")
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except:
+                    pass
 # -----------------------
 # Main
 # -----------------------
