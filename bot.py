@@ -6,7 +6,6 @@ import subprocess
 from time import perf_counter
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-
 import requests
 
 # -----------------------
