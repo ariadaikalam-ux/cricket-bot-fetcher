@@ -5,12 +5,11 @@
  * Output:
  *  - Always 1080x1350 (4:5)
  *  - White background
- *  - Tweet card centered and scaled to use space nicely
- *  - Keeps author DP/name visible (captures the tweet "card")
+ *  - Tweet card centered and scaled
+ *  - STRICT: only 1 media item (keeps first, hides the rest)
  */
 
 const fs = require("fs");
-const path = require("path");
 const { chromium } = require("playwright");
 
 const tweetUrl = process.argv[2];
@@ -58,25 +57,20 @@ async function timeStep(label, fn) {
     });
 
     const context = await browser.newContext({
-      // Make sure we get LIGHT mode always
       colorScheme: "light",
       deviceScaleFactor: 2,
     });
 
     const page = await context.newPage();
-
-    // Big viewport for clean element capture (we compose to 1080x1350 later)
     await page.setViewportSize({ width: 1400, height: 2000 });
 
-    // Speed up: block fonts + some heavy stuff
+    // Speed up a bit
     await page.route("**/*", (route) => {
       const url = route.request().url();
       const rtype = route.request().resourceType();
 
-      // Block fonts
       if (url.match(/\.(woff|woff2|ttf|otf)(\?|$)/i)) return route.abort();
 
-      // Block some common analytics/beacons
       if (
         url.includes("doubleclick") ||
         url.includes("googletagmanager") ||
@@ -86,7 +80,9 @@ async function timeStep(label, fn) {
         return route.abort();
       }
 
-      // Allow everything else
+      // block some heavy media previews if needed (optional)
+      if (rtype === "media" && url.includes("video")) return route.abort();
+
       return route.continue();
     });
 
@@ -95,8 +91,6 @@ async function timeStep(label, fn) {
     });
 
     await timeStep("Wait for tweet content", async () => {
-      // X (Twitter) usually uses [data-testid="tweet"]
-      // Fallbacks are included
       const candidates = [
         '[data-testid="tweet"]',
         "article",
@@ -106,9 +100,8 @@ async function timeStep(label, fn) {
 
       let found = false;
       for (const sel of candidates) {
-        const loc = page.locator(sel).first();
         try {
-          await loc.waitFor({ timeout: 12000, state: "visible" });
+          await page.locator(sel).first().waitFor({ timeout: 12000, state: "visible" });
           found = true;
           break;
         } catch (_) {}
@@ -117,20 +110,15 @@ async function timeStep(label, fn) {
     });
 
     await timeStep("Force white background + hide junk UI", async () => {
-      // Clean page visuals + force white
       await page.addStyleTag({
         content: `
           :root, html, body { background: #ffffff !important; }
           body { overflow: hidden !important; }
 
-          /* Hide top/bottom bars, login nags etc (best-effort) */
           header, nav, aside, [role="banner"], [role="navigation"] { display: none !important; }
-          [data-testid="sidebarColumn"], [data-testid="primaryColumn"] { background: #ffffff !important; }
+          [data-testid="sidebarColumn"] { display: none !important; }
 
-          /* Remove any dim/overlay backgrounds */
           [role="dialog"] { background: transparent !important; }
-
-          /* Make tweet card look like a clean card */
           [data-testid="tweet"] { background: #ffffff !important; }
         `,
       });
@@ -141,7 +129,6 @@ async function timeStep(label, fn) {
     });
 
     const tweetEl = await timeStep("Pick best tweet element", async () => {
-      // Prefer the tweet testid, then fallback
       const locTweet = page.locator('[data-testid="tweet"]').first();
       if (await locTweet.count()) return locTweet;
 
@@ -152,6 +139,79 @@ async function timeStep(label, fn) {
       if (await locMain.count()) return locMain;
 
       return page.locator("body").first();
+    });
+
+    // ✅ STRICT 1 MEDIA: keep first image/video, hide the rest (even if duplicates)
+    await timeStep("STRICT: keep only first media", async () => {
+      await tweetEl.evaluate((root) => {
+        // Media wrappers we commonly see in X
+        const mediaSelectors = [
+          '[data-testid="tweetPhoto"]',           // photos
+          '[data-testid="videoPlayer"]',          // videos
+          'div[aria-label="Embedded video"]',     // fallback video
+          'div[aria-label="Embedded image"]',     // fallback image
+        ];
+
+        // Collect unique media blocks inside the tweet
+        let mediaBlocks = [];
+        for (const sel of mediaSelectors) {
+          root.querySelectorAll(sel).forEach((el) => mediaBlocks.push(el));
+        }
+
+        // If X renders a grid, tweetPhoto can be nested; remove duplicates by DOM order
+        // Keep first block, hide everything after it.
+        if (mediaBlocks.length > 1) {
+          // Sort by DOM position to reliably pick "first"
+          mediaBlocks.sort((a, b) => {
+            if (a === b) return 0;
+            const pos = a.compareDocumentPosition(b);
+            if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+            if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+            return 0;
+          });
+
+          const keep = mediaBlocks[0];
+
+          for (let i = 1; i < mediaBlocks.length; i++) {
+            const el = mediaBlocks[i];
+            el.style.display = "none";
+            el.style.visibility = "hidden";
+          }
+
+          // Also: if inside the kept block there are multiple <img> (rare),
+          // keep only the first <img>
+          const imgs = keep.querySelectorAll("img");
+          if (imgs.length > 1) {
+            for (let i = 1; i < imgs.length; i++) {
+              imgs[i].style.display = "none";
+              imgs[i].style.visibility = "hidden";
+            }
+          }
+        }
+
+        // Extra safety: sometimes the same image is duplicated as multiple imgs in the tweet
+        // Keep only first "meaningful" image within the tweet media area.
+        const allImgs = Array.from(root.querySelectorAll("img"));
+        if (allImgs.length > 0) {
+          // We DO NOT want to hide profile pics etc.
+          // Heuristic: media images tend to be bigger; keep first big image and hide other big ones.
+          const bigImgs = allImgs.filter((img) => {
+            const r = img.getBoundingClientRect();
+            return r.width >= 180 && r.height >= 180; // treat as "media-like"
+          });
+
+          if (bigImgs.length > 1) {
+            // Keep first big image only
+            for (let i = 1; i < bigImgs.length; i++) {
+              bigImgs[i].style.display = "none";
+              bigImgs[i].style.visibility = "hidden";
+            }
+          }
+        }
+      });
+
+      // Let layout reflow after hiding
+      await page.waitForTimeout(200);
     });
 
     await timeStep("Capture RAW tweet element (tight crop)", async () => {
@@ -166,14 +226,11 @@ async function timeStep(label, fn) {
       const page2 = await context.newPage();
       await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
 
-      // We render the raw image inside a fixed 1080x1350 canvas,
-      // centered and scaled to use space without cropping.
       const html = `
         <!doctype html>
         <html>
           <head>
             <meta charset="utf-8"/>
-            <meta name="viewport" content="width=device-width, initial-scale=1"/>
             <style>
               html, body {
                 margin: 0;
@@ -193,7 +250,7 @@ async function timeStep(label, fn) {
               .pad {
                 width: ${FINAL_W}px;
                 height: ${FINAL_H}px;
-                padding: 64px; /* controls “use of space” */
+                padding: 64px;
                 box-sizing: border-box;
                 display: flex;
                 align-items: center;
@@ -218,24 +275,19 @@ async function timeStep(label, fn) {
       `;
 
       await page2.setContent(html, { waitUntil: "load" });
-      await page2.waitForTimeout(250);
-
+      await page2.waitForTimeout(150);
       await page2.screenshot({ path: outputPath, type: "png" });
       await page2.close();
     });
 
-    // cleanup raw
-    try {
-      fs.unlinkSync(rawPath);
-    } catch (_) {}
+    // cleanup
+    try { fs.unlinkSync(rawPath); } catch (_) {}
 
     console.log(`[${nowIso()}] ✅ DONE: ${outputPath}`);
     process.exit(0);
   } catch (err) {
     console.error(`[${nowIso()}] ❌ FAIL: ${err.message}`);
-    try {
-      if (fs.existsSync(rawPath)) fs.unlinkSync(rawPath);
-    } catch (_) {}
+    try { if (fs.existsSync(rawPath)) fs.unlinkSync(rawPath); } catch (_) {}
     process.exit(1);
   } finally {
     if (browser) await browser.close();
