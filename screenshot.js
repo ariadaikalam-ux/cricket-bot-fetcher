@@ -212,28 +212,24 @@ async function timeStep(label, fn) {
 
     // ✅ STRICT 1 MEDIA
     // ✅ STRICT 1 MEDIA (but FIX multi-media blank-half by collapsing grid)
+// ✅ STRICT: keep only first media + collapse grid to single column
 await timeStep("STRICT: keep only first media", async () => {
   await tweetEl.evaluate((root) => {
-    // 1) Find media tiles in DOM order
-    const mediaSelectors = [
+    const selectors = [
       '[data-testid="tweetPhoto"]',
       '[data-testid="videoPlayer"]',
       'div[aria-label="Embedded video"]',
       'div[aria-label="Embedded image"]',
     ];
+    let blocks = [];
 
-    let mediaBlocks = [];
-    for (const sel of mediaSelectors) {
-      root.querySelectorAll(sel).forEach((el) => mediaBlocks.push(el));
+    for (const sel of selectors) {
+      root.querySelectorAll(sel).forEach(el => blocks.push(el));
     }
+    if (blocks.length <= 1) return;
 
-    if (mediaBlocks.length <= 1) {
-      // Single media case: do nothing (your current behavior works perfectly)
-      return;
-    }
-
-    // Sort in DOM order, then keep first
-    mediaBlocks.sort((a, b) => {
+    // sort in DOM order
+    blocks.sort((a, b) => {
       if (a === b) return 0;
       const pos = a.compareDocumentPosition(b);
       if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
@@ -241,62 +237,59 @@ await timeStep("STRICT: keep only first media", async () => {
       return 0;
     });
 
-    const keep = mediaBlocks[0];
+    const keep = blocks[0];
 
-    // 2) Hide all other media blocks
-    for (let i = 1; i < mediaBlocks.length; i++) {
-      mediaBlocks[i].style.display = "none";
-      mediaBlocks[i].style.visibility = "hidden";
+    // hide rest
+    for (let i = 1; i < blocks.length; i++) {
+      blocks[i].style.display = "none";
+      blocks[i].style.visibility = "hidden";
     }
 
-    // 3) If the kept block contains multiple imgs, keep only first
-    const imgs = keep.querySelectorAll("img");
-    if (imgs.length > 1) {
-      for (let i = 1; i < imgs.length; i++) {
-        imgs[i].style.display = "none";
-        imgs[i].style.visibility = "hidden";
+    // also hide extra img if inside the same block
+    const imgsInside = keep.querySelectorAll("img");
+    if (imgsInside.length > 1) {
+      for (let i = 1; i < imgsInside.length; i++) {
+        imgsInside[i].style.display = "none";
+        imgsInside[i].style.visibility = "hidden";
       }
     }
 
-    // 4) CRITICAL FIX:
-    //    Collapse the multi-media grid so it becomes a single full-width item,
-    //    removing the blank half.
-    //
-    // Try to find a reasonable "grid" container above the tile
-    const grid =
-      keep.closest('[data-testid="tweetPhoto"]')?.parentElement ||
-      keep.parentElement;
+    // === COLLAPSE GRID == //
 
-    if (grid) {
-      // If it's a grid/flex layout, force it to single column
-      grid.style.display = "block";
-      grid.style.gridTemplateColumns = "1fr";
-      grid.style.gridAutoFlow = "row";
-      grid.style.gap = "0px";
-      grid.style.width = "100%";
-      grid.style.maxWidth = "100%";
+    // find the grid/flex parent (likely two columns)
+    let grid = keep.parentElement;
+    while (grid && grid !== root) {
+      const style = window.getComputedStyle(grid);
+      if (
+        style.display.startsWith("grid") ||
+        style.display.startsWith("flex")
+      ) {
+        break;
+      }
+      grid = grid.parentElement;
     }
 
-    // Make kept tile take full width
+    if (grid && grid !== root) {
+      // If grid: force 1 column
+      grid.style.display = "block";
+      grid.style.gridTemplateColumns = "none";
+      grid.style.gridAutoFlow = "row";
+      grid.style.flexDirection = "column";
+      grid.style.width = "100%";
+    }
+
+    // make kept tile take full width
     keep.style.display = "block";
     keep.style.width = "100%";
     keep.style.maxWidth = "100%";
 
-    // Make the link wrapper full width if present
-    const a = keep.closest("a");
-    if (a) {
-      a.style.display = "block";
-      a.style.width = "100%";
-      a.style.maxWidth = "100%";
-    }
-
-    // Ensure the kept image itself stretches nicely (no weird half)
-    const firstImg = keep.querySelector("img");
-    if (firstImg) {
-      firstImg.style.display = "block";
-      firstImg.style.width = "100%";
-      firstImg.style.height = "auto";
-      firstImg.style.maxWidth = "100%";
+    // adjust image inside kept tile
+    const img = keep.querySelector("img");
+    if (img) {
+      img.style.width = "100%";
+      img.style.height = "auto";
+      img.style.maxWidth = "100%";
+      img.style.display = "block";
     }
   });
 
