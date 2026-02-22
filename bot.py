@@ -104,7 +104,15 @@ class StageTimer:
             log(f"❌ ERROR in {self.name}: {exc}")
         log(f"✅ END: {self.name} ({dt:.2f}s)")
         return False
-
+def sort_queue_oldest_first(queue: List[str], tweet_data: Dict[str, Any]) -> List[str]:
+    def key(tid: str):
+        t = tweet_data.get(tid, {})
+        ts = extract_tweet_time(t) or ""
+        try:
+            return parse_dt(ts)
+        except Exception:
+            return datetime.min.replace(tzinfo=timezone.utc)
+    return sorted(queue, key=key)
 
 # -----------------------
 # Time helpers
@@ -689,6 +697,9 @@ def main():
     # 1) Fetch + filter
     with StageTimer("1) Fetch & filter (per-account)"):
         fetch_and_enqueue(state, cutoff_dt, queue, posted_list, tweet_data)
+        # After fetch_and_enqueue(...)
+    state["queue"] = sort_queue_oldest_first(state["queue"], tweet_data)
+    queue = state["queue"]
 
     log(f"Queue: {len(queue)}/{THRESHOLD}")
 
