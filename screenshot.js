@@ -278,28 +278,76 @@ async function replaceTweetHeaderWithMine(tweetEl, page, myBrand) {
     const userNameBlock = root.querySelector('[data-testid="User-Name"]');
     if (!userNameBlock) return;
 
-    // Row that holds avatar + name block
-    const identityRow =
-      userNameBlock.closest("div")?.parentElement ||
-      userNameBlock.parentElement ||
-      userNameBlock;
+    const header = userNameBlock.closest("header") || root.querySelector("header");
+    if (!header) return;
 
-    if (!identityRow) return;
+    // Prevent duplicate injection
+    if (header.querySelector("[data-mybrand='1']")) return;
 
-    // prevent duplicate
-    if (identityRow.querySelector("[data-mybrand='1']")) return;
+    // ---- CAPTURE ORIGINAL STYLES (before hiding) ----
+    // Real "name" is usually the first visible span inside User-Name
+    const realNameEl =
+      Array.from(userNameBlock.querySelectorAll("span")).find((s) => {
+        const t = (s.textContent || "").trim();
+        return t.length > 0;
+      }) || null;
 
-    // Hide original name block + avatar in the same row
+    // Real "@handle" often lives near User-Name; try a few common patterns
+    const realHandleEl =
+      userNameBlock.querySelector('div[dir="ltr"] span') ||
+      userNameBlock.querySelector('span[dir="ltr"]') ||
+      // fallback: any grey-ish secondary text span in the block
+      Array.from(userNameBlock.querySelectorAll("span")).slice().reverse()[0] ||
+      null;
+
+    const pickStyle = (el) => {
+      if (!el) return null;
+      const cs = window.getComputedStyle(el);
+      return {
+        fontFamily: cs.fontFamily,
+        fontSize: cs.fontSize,
+        fontWeight: cs.fontWeight,
+        letterSpacing: cs.letterSpacing,
+        color: cs.color,
+        lineHeight: cs.lineHeight,
+      };
+    };
+
+    const nameStyle = pickStyle(realNameEl);
+    const handleStyle = pickStyle(realHandleEl);
+
+    const applyStyle = (el, st) => {
+      if (!st) return;
+      el.style.fontFamily = st.fontFamily;
+      el.style.fontSize = st.fontSize;
+      el.style.fontWeight = st.fontWeight;
+      el.style.letterSpacing = st.letterSpacing;
+      el.style.color = st.color;
+      el.style.lineHeight = st.lineHeight;
+    };
+
+    // 1) Hide original name/handle block
     userNameBlock.style.display = "none";
     userNameBlock.style.visibility = "hidden";
 
-    const maybeAvatar = identityRow.querySelector("img");
-    if (maybeAvatar) {
-      maybeAvatar.style.display = "none";
-      maybeAvatar.style.visibility = "hidden";
+    // 2) Hide original avatar inside the SAME header
+    const imgs = Array.from(header.querySelectorAll("img"));
+    for (const img of imgs) {
+      if (img.closest("[data-mybrand='1']")) continue;
+
+      const r = img.getBoundingClientRect();
+      if (r.width > 10 && r.width <= 80 && r.height > 10 && r.height <= 80) {
+        img.style.display = "none";
+        img.style.visibility = "hidden";
+        const a = img.closest("a");
+        if (a) {
+          a.style.display = "none";
+          a.style.visibility = "hidden";
+        }
+      }
     }
 
-    // Insert ours
+    // 3) Inject your branded header
     const wrap = document.createElement("div");
     wrap.setAttribute("data-mybrand", "1");
     wrap.style.display = "flex";
@@ -324,18 +372,14 @@ async function replaceTweetHeaderWithMine(tweetEl, page, myBrand) {
 
     const name = document.createElement("div");
     name.textContent = brand.name || "";
-    name.style.fontWeight = "800";
-    name.style.fontSize = "18px";
-    name.style.lineHeight = "1.1";
+    applyStyle(name, nameStyle);
     name.style.whiteSpace = "nowrap";
     name.style.overflow = "hidden";
     name.style.textOverflow = "ellipsis";
 
     const user = document.createElement("div");
     user.textContent = brand.username || "";
-    user.style.fontSize = "15px";
-    user.style.lineHeight = "1.1";
-    user.style.color = "#536471";
+    applyStyle(user, handleStyle);
     user.style.whiteSpace = "nowrap";
     user.style.overflow = "hidden";
     user.style.textOverflow = "ellipsis";
@@ -346,7 +390,7 @@ async function replaceTweetHeaderWithMine(tweetEl, page, myBrand) {
     wrap.appendChild(avatar);
     wrap.appendChild(txt);
 
-    identityRow.insertBefore(wrap, identityRow.firstChild);
+    header.insertBefore(wrap, header.firstChild);
   }, myBrand);
 
   await page.waitForTimeout(150);
