@@ -234,7 +234,7 @@ def load_state() -> Dict[str, Any]:
             "total_carousels": 0,
             "last_caption_index": -1,
             "last_caption_text": "",
-            "last_seen_time_by_account": {},
+            "last_post_time": None,
         }
     with open(STATE_FILE, "r", encoding="utf-8") as f:
         s = json.load(f)
@@ -249,8 +249,7 @@ def load_state() -> Dict[str, Any]:
     s.setdefault("in_flight", [])
     s.setdefault("last_caption_index", -1)
     s.setdefault("last_caption_text", "")
-    s.setdefault("last_seen_time_by_account", {})
-    if not isinstance(s["last_seen_time_by_account"], dict):  s["last_seen_time_by_account"] = {}
+    s.setdefault("last_post_time", None)
     if not isinstance(s["in_flight"], list):  s["in_flight"] = []
     if not isinstance(s["queue"], list):      s["queue"] = []
     if not isinstance(s["posted"], list):     s["posted"] = []
@@ -329,7 +328,7 @@ def socialdata_fetch_account(
 # -----------------------
 def passes_filters(
     t: Dict[str, Any],
-    account_cutoff_dt: datetime,
+    cutoff_dt: datetime,
     posted_set: set,
     queued_set: set,
     seen_set: set,
@@ -354,39 +353,39 @@ def passes_filters(
     if not created_str:         return False, "no_time"
     try:
         created_dt = parse_dt(created_str)
-    except Exception:           return False, "bad_time"
-    if created_dt <= account_cutoff_dt:   return False, "old"
+    except Exception:
+        return False, "bad_time"
+
+    if created_dt <= cutoff_dt:
+        return False, "old"
 
     return True, ""
-
 
 # -----------------------
 # Fetch + filter + enqueue
 # -----------------------
 def fetch_and_enqueue(
     state: Dict[str, Any],
-    start_dt: datetime,
+    cutoff_dt: datetime,
     queue: List[str],
     posted_list: List[str],
     tweet_data: Dict[str, Any],
 ) -> None:
     """
-    Cost-aware per-account fetching strategy:
+    GLOBAL cutoff strategy:
 
-    - Accounts are SHUFFLED each run so all accounts get fair rotation
-      (not just the first N always dominating)
-    - Fetch accounts one by one, stop as soon as queue >= THRESHOLD
-      (stop early = fewer API calls = lower cost)
-    - Round 2: only if queue < THRESHOLD after round 1
-      Paginate ONLY the accounts that gave 0 good tweets using their cursor
-    - All evaluated IDs saved to state["seen"] so they're skipped next run
-
-    Cost estimate: ~$4-5/month at 12 runs/day with 9 accounts and THRESHOLD=10
+    - cutoff_dt is ONE global time (state["last_checked_time"] or start_time)
+    - We fetch accounts (shuffled)
+    - We enqueue tweets newer than cutoff_dt and passing filters
+    - We track newest tweet time seen globally and store it as last_checked_time
+      (you said you accept that this can skip older tweets from accounts not fetched)
     """
+
     posted_set = set(posted_list)
     queued_set = set(queue)
     seen_set   = set(state.get("seen") or [])
-    last_by_acct: Dict[str, str] = state.get("last_seen_time_by_account", {})
+
+    max_seen_dt_global: Optional[datetime] = None
 
     counts: Dict[str, int] = {
         "added": 0, "seen": 0, "posted": 0, "queued": 0,
@@ -395,34 +394,26 @@ def fetch_and_enqueue(
         "no_time": 0, "bad_time": 0, "no_id": 0,
     }
 
-    def process_batch(
-    tweets: List[Dict[str, Any]],
-    account_cutoff: datetime
-) -> Tuple[int, Optional[datetime]]:
-        """
-        Filter and enqueue a batch of tweets.
-        IMPORTANT: seen_set.add(tid) is called AFTER passes_filters(),
-        not before — to avoid incorrectly marking tweets as seen on first eval.
-        Returns count of tweets added to queue.
-        """
-        max_seen_dt: Optional[datetime] = None
+    def process_batch(tweets: List[Dict[str, Any]]) -> int:
+        nonlocal max_seen_dt_global
         n = 0
+
         for t in tweets:
             tid = str(t.get("id_str") or t.get("id") or "")
+
+            # Track max timestamp seen globally (from fetched tweets)
             created_str = extract_tweet_time(t)
-            created_dt = None
             if created_str:
                 try:
                     created_dt = parse_dt(created_str)
+                    if (max_seen_dt_global is None) or (created_dt > max_seen_dt_global):
+                        max_seen_dt_global = created_dt
                 except Exception:
-                    created_dt = None
-            
-            if created_dt and (max_seen_dt is None or created_dt > max_seen_dt):
-                max_seen_dt = created_dt
-            
-            ok, reason = passes_filters(t, account_cutoff, posted_set, queued_set, seen_set)
+                    pass
 
-            # Mark seen AFTER checking — not before
+            ok, reason = passes_filters(t, cutoff_dt, posted_set, queued_set, seen_set)
+
+            # Mark seen AFTER checking
             if tid:
                 seen_set.add(tid)
 
@@ -435,15 +426,17 @@ def fetch_and_enqueue(
             else:
                 counts[reason] = counts.get(reason, 0) + 1
 
-        return n, max_seen_dt
+        return n
 
-    # Shuffle so all accounts get equal rotation across runs
+    # Shuffle accounts every run
     shuffled_accounts = ACCOUNTS[:]
     random.shuffle(shuffled_accounts)
     log(f"  Account order this run: {shuffled_accounts}")
 
-    # ---- Round 1: fetch accounts one by one, stop early at THRESHOLD ----
+    # Round 1: stop early when queue hits threshold
     log(f"  Round 1: fetching up to {len(shuffled_accounts)} accounts (stop at queue={THRESHOLD})...")
+
+    LOW_YIELD_THRESHOLD = 2
     dry_accounts: List[str] = []
     cursors: Dict[str, Optional[str]] = {}
     fetched_accounts = 0
@@ -452,62 +445,43 @@ def fetch_and_enqueue(
         if len(queue) >= THRESHOLD:
             log(f"  ✅ Queue reached threshold ({THRESHOLD}) — stopping early after {fetched_accounts} accounts.")
             break
-        account_cutoff = start_dt
-        last_ts = last_by_acct.get(account)
-        if last_ts:
-            try:
-                account_cutoff = parse_dt(last_ts)
-            except Exception:
-                account_cutoff = start_dt
+
         tweets, cursor = socialdata_fetch_account(account)
-        
         cursors[account] = cursor
         fetched_accounts += 1
-        good, max_seen_dt = process_batch(tweets, account_cutoff)
-        if max_seen_dt:
-            last_by_acct[account] = max_seen_dt.isoformat()
+
+        good = process_batch(tweets)
         dbg(f"  @{account}: {len(tweets)} fetched → {good} good (queue now: {len(queue)})")
-        LOW_YIELD_THRESHOLD = 2
+
         if good < LOW_YIELD_THRESHOLD:
             dry_accounts.append(account)
 
-    log(f"  Round 1 done. Fetched {fetched_accounts}/{len(shuffled_accounts)} accounts. "
-        f"Queue: {len(queue)}/{THRESHOLD}. Dry: {dry_accounts}")
+    log(
+        f"  Round 1 done. Fetched {fetched_accounts}/{len(shuffled_accounts)} accounts. "
+        f"Queue: {len(queue)}/{THRESHOLD}. Low-yield: {dry_accounts}"
+    )
 
-    # ---- Round 2: only if still below threshold ----
+    # Round 2: paginate only low-yield accounts
     if len(queue) < THRESHOLD and dry_accounts:
-        log(f"  Round 2: paginating {len(dry_accounts)} dry accounts...")
+        log(f"  Round 2: paginating {len(dry_accounts)} low-yield accounts...")
+
         for account in dry_accounts:
             if len(queue) >= THRESHOLD:
                 break
-        
+
             cursor = cursors.get(account)
             if not cursor:
                 dbg(f"  @{account}: no cursor available, skipping round 2")
                 continue
-        
-            # cutoff for this account
-            account_cutoff = start_dt
-            last_ts = last_by_acct.get(account)
-            if last_ts:
-                try:
-                    account_cutoff = parse_dt(last_ts)
-                except Exception:
-                    account_cutoff = start_dt
-        
-            # fetch page 2
+
             tweets, _ = socialdata_fetch_account(account, cursor=cursor)
-        
-            # process
-            good, max_seen_dt = process_batch(tweets, account_cutoff)
-            if max_seen_dt:
-                last_by_acct[account] = max_seen_dt.isoformat()
+            good = process_batch(tweets)
             dbg(f"  @{account} page 2: {len(tweets)} fetched → {good} good")
+
         log(f"  Round 2 done. Queue: {len(queue)}/{THRESHOLD}")
 
-    # Persist seen set
+    # Persist seen list
     state["seen"] = list(seen_set)
-    state["last_seen_time_by_account"] = last_by_acct
 
     log(
         f"  Filter summary — added: {counts['added']} | "
@@ -516,8 +490,6 @@ def fetch_and_enqueue(
         f"video: {counts['video']} | no_photo: {counts['no_photo']} | "
         f"old: {counts['old']} | dupe(posted/queued): {counts['posted'] + counts['queued']}"
     )
-
-
 # -----------------------
 # Imgur upload
 # -----------------------
@@ -706,7 +678,8 @@ def main():
         return
 
     try:
-        start_dt = parse_dt(state["start_time"])
+        cutoff_str = state.get("last_post_time") or state["start_time"]
+        cutoff_dt = parse_dt(cutoff_str)
     except Exception as e:
         log(f"❌ Bad start_time: {state.get('start_time')} ({e}) — resetting")
         state["start_time"] = utc_now_iso()
@@ -725,7 +698,7 @@ def main():
 
     # 1) Fetch + filter
     with StageTimer("1) Fetch & filter (per-account)"):
-        fetch_and_enqueue(state, start_dt, queue, posted_list, tweet_data)
+        fetch_and_enqueue(state, cutoff_dt, queue, posted_list, tweet_data)
 
     log(f"Queue: {len(queue)}/{THRESHOLD}")
 
@@ -900,6 +873,7 @@ def main():
         state["in_flight"]          = []
         state["last_caption_index"] = this_caption_index
         state["last_caption_text"]  = this_caption
+        state["last_post_time"] = utc_now_iso()
 
         bound_state(state)
         save_state(state)
