@@ -30,10 +30,10 @@ CAPTION = os.environ.get(
 )
 
 # tuning (reduce if you want faster)
-SLEEP_SCREENSHOT = float(os.environ.get("SLEEP_SCREENSHOT", "0.3"))
-SLEEP_IG_CONTAINER = float(os.environ.get("SLEEP_IG_CONTAINER", "0.8"))
-SLEEP_BEFORE_PUBLISH = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "5.0"))
-SLEEP_IMGUR = float(os.environ.get("SLEEP_IMGUR", "0.2"))
+SLEEP_SCREENSHOT = float(os.environ.get("SLEEP_SCREENSHOT", "0.5"))
+SLEEP_IG_CONTAINER = float(os.environ.get("SLEEP_IG_CONTAINER", "10"))
+SLEEP_BEFORE_PUBLISH = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "15.0"))
+SLEEP_IMGUR = float(os.environ.get("SLEEP_IMGUR", "0.5"))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(BASE_DIR, "state.json")
