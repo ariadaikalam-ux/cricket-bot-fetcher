@@ -1,16 +1,6 @@
 {
   "start_time": "2026-02-21T22:24:44.661873+00:00",
   "queue": [
-    "2025455147753845074",
-    "2025452729079136284",
-    "2025452447293210787",
-    "2025450667134026057",
-    "2025450418906824730",
-    "2025450372932976935",
-    "2025450358034616367",
-    "2025449940399653140",
-    "2025449335048356081",
-    "2025446610910740889",
     "2025442741493399724",
     "2025439997063823612",
     "2025439425946345613",
@@ -20,2596 +10,25 @@
     "2025438373293564078",
     "2025437862054044039",
     "2025437428602077618",
-    "2025456831108448338"
+    "2025456831108448338",
+    "2025461459665432822",
+    "2025461138067259864",
+    "2025461057771511959",
+    "2025459683876602221"
   ],
-  "posted": [],
+  "posted": [
+    "2025450358034616367",
+    "2025449335048356081",
+    "2025452447293210787",
+    "2025450667134026057",
+    "2025455147753845074",
+    "2025449940399653140",
+    "2025446610910740889",
+    "2025452729079136284",
+    "2025450372932976935",
+    "2025450418906824730"
+  ],
   "tweet_data": {
-    "2025455147753845074": {
-      "tweet_created_at": "2026-02-22T06:18:33.000000Z",
-      "id": 2025455147753845074,
-      "id_str": "2025455147753845074",
-      "type": "tweet",
-      "conversation_id_str": "2025455147753845074",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "CEO OF SG CRICKET WITH ULTIMATES OF INDIAN CRICKET \ud83d\ude0d\ud83c\uddee\ud83c\uddf3 https://t.co/pkGsoxChmF",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": null,
-      "in_reply_to_status_id_str": null,
-      "in_reply_to_user_id": null,
-      "in_reply_to_user_id_str": null,
-      "in_reply_to_screen_name": null,
-      "user": {
-        "id": 743735095308099585,
-        "id_str": "743735095308099585",
-        "name": "Johns.",
-        "screen_name": "CricCrazyJohns",
-        "location": "India ",
-        "url": "https://whatsapp.com/channel/0029VbC3Se9DJ6Gx7jzojY0i",
-        "description": "Cricket fan for life, DM for Collaboration, Tips on in Profile\ud83e\udd1e",
-        "protected": false,
-        "verified": true,
-        "followers_count": 698824,
-        "friends_count": 567,
-        "listed_count": 1222,
-        "favourites_count": 124149,
-        "statuses_count": 441647,
-        "created_at": "2016-06-17T09:20:39.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/743735095308099585/1770298694",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1878716552327086080/svu2jQwS_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 12,
-      "retweet_count": 2,
-      "favorite_count": 65,
-      "views_count": 328,
-      "bookmark_count": 1,
-      "lang": "en",
-      "entities": {
-        "hashtags": [],
-        "media": [
-          {
-            "display_url": "pic.x.com/pkGsoxChmF",
-            "expanded_url": "https://x.com/CricCrazyJohns/status/2025455147753845074/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 59,
-                    "w": 59,
-                    "x": 575,
-                    "y": 305
-                  },
-                  {
-                    "h": 128,
-                    "w": 128,
-                    "x": 656,
-                    "y": 159
-                  },
-                  {
-                    "h": 137,
-                    "w": 137,
-                    "x": 345,
-                    "y": 172
-                  },
-                  {
-                    "h": 152,
-                    "w": 152,
-                    "x": 103,
-                    "y": 84
-                  },
-                  {
-                    "h": 165,
-                    "w": 165,
-                    "x": 941,
-                    "y": 102
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 58,
-                    "w": 58,
-                    "x": 565,
-                    "y": 300
-                  },
-                  {
-                    "h": 125,
-                    "w": 125,
-                    "x": 645,
-                    "y": 156
-                  },
-                  {
-                    "h": 134,
-                    "w": 134,
-                    "x": 339,
-                    "y": 169
-                  },
-                  {
-                    "h": 149,
-                    "w": 149,
-                    "x": 101,
-                    "y": 82
-                  },
-                  {
-                    "h": 162,
-                    "w": 162,
-                    "x": 925,
-                    "y": 100
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 59,
-                    "w": 59,
-                    "x": 575,
-                    "y": 305
-                  },
-                  {
-                    "h": 128,
-                    "w": 128,
-                    "x": 656,
-                    "y": 159
-                  },
-                  {
-                    "h": 137,
-                    "w": 137,
-                    "x": 345,
-                    "y": 172
-                  },
-                  {
-                    "h": 152,
-                    "w": 152,
-                    "x": 103,
-                    "y": 84
-                  },
-                  {
-                    "h": 165,
-                    "w": 165,
-                    "x": 941,
-                    "y": 102
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 32,
-                    "w": 32,
-                    "x": 320,
-                    "y": 169
-                  },
-                  {
-                    "h": 71,
-                    "w": 71,
-                    "x": 365,
-                    "y": 88
-                  },
-                  {
-                    "h": 76,
-                    "w": 76,
-                    "x": 192,
-                    "y": 95
-                  },
-                  {
-                    "h": 84,
-                    "w": 84,
-                    "x": 57,
-                    "y": 46
-                  },
-                  {
-                    "h": 91,
-                    "w": 91,
-                    "x": 524,
-                    "y": 56
-                  }
-                ]
-              }
-            },
-            "id_str": "2025455145019211776",
-            "indices": [
-              55,
-              78
-            ],
-            "media_key": "3_2025455145019211776",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025455145019211776"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvcuRtbgAA04Jz.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 683,
-                  "w": 1220,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 986,
-                  "w": 986,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 986,
-                  "w": 865,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 986,
-                  "w": 493,
-                  "x": 28,
-                  "y": 0
-                },
-                {
-                  "h": 986,
-                  "w": 1220,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 986,
-              "width": 1220
-            },
-            "sizes": {
-              "large": {
-                "h": 986,
-                "resize": "fit",
-                "w": 1220
-              },
-              "medium": {
-                "h": 970,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 550,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/pkGsoxChmF"
-          },
-          {
-            "display_url": "pic.x.com/pkGsoxChmF",
-            "expanded_url": "https://x.com/CricCrazyJohns/status/2025455147753845074/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 59,
-                    "w": 59,
-                    "x": 575,
-                    "y": 305
-                  },
-                  {
-                    "h": 128,
-                    "w": 128,
-                    "x": 656,
-                    "y": 159
-                  },
-                  {
-                    "h": 137,
-                    "w": 137,
-                    "x": 345,
-                    "y": 172
-                  },
-                  {
-                    "h": 152,
-                    "w": 152,
-                    "x": 103,
-                    "y": 84
-                  },
-                  {
-                    "h": 165,
-                    "w": 165,
-                    "x": 941,
-                    "y": 102
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 58,
-                    "w": 58,
-                    "x": 565,
-                    "y": 300
-                  },
-                  {
-                    "h": 125,
-                    "w": 125,
-                    "x": 645,
-                    "y": 156
-                  },
-                  {
-                    "h": 134,
-                    "w": 134,
-                    "x": 339,
-                    "y": 169
-                  },
-                  {
-                    "h": 149,
-                    "w": 149,
-                    "x": 101,
-                    "y": 82
-                  },
-                  {
-                    "h": 162,
-                    "w": 162,
-                    "x": 925,
-                    "y": 100
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 59,
-                    "w": 59,
-                    "x": 575,
-                    "y": 305
-                  },
-                  {
-                    "h": 128,
-                    "w": 128,
-                    "x": 656,
-                    "y": 159
-                  },
-                  {
-                    "h": 137,
-                    "w": 137,
-                    "x": 345,
-                    "y": 172
-                  },
-                  {
-                    "h": 152,
-                    "w": 152,
-                    "x": 103,
-                    "y": 84
-                  },
-                  {
-                    "h": 165,
-                    "w": 165,
-                    "x": 941,
-                    "y": 102
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 32,
-                    "w": 32,
-                    "x": 320,
-                    "y": 169
-                  },
-                  {
-                    "h": 71,
-                    "w": 71,
-                    "x": 365,
-                    "y": 88
-                  },
-                  {
-                    "h": 76,
-                    "w": 76,
-                    "x": 192,
-                    "y": 95
-                  },
-                  {
-                    "h": 84,
-                    "w": 84,
-                    "x": 57,
-                    "y": 46
-                  },
-                  {
-                    "h": 91,
-                    "w": 91,
-                    "x": 524,
-                    "y": 56
-                  }
-                ]
-              }
-            },
-            "id_str": "2025455145019211776",
-            "indices": [
-              55,
-              78
-            ],
-            "media_key": "3_2025455145019211776",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025455145019211776"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvcuRtbgAA04Jz.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 683,
-                  "w": 1220,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 986,
-                  "w": 986,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 986,
-                  "w": 865,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 986,
-                  "w": 493,
-                  "x": 28,
-                  "y": 0
-                },
-                {
-                  "h": 986,
-                  "w": 1220,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 986,
-              "width": 1220
-            },
-            "sizes": {
-              "large": {
-                "h": 986,
-                "resize": "fit",
-                "w": 1220
-              },
-              "medium": {
-                "h": 970,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 550,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/pkGsoxChmF"
-          }
-        ],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [],
-        "display_text_range": [
-          0,
-          54
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025452729079136284": {
-      "tweet_created_at": "2026-02-22T06:08:56.000000Z",
-      "id": 2025452729079136284,
-      "id_str": "2025452729079136284",
-      "type": "reply",
-      "conversation_id_str": "2025266978391556399",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "@Beast__07_ Both were the mastermind of the planning \ud83d\ude09 https://t.co/f11TZKJqv5",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": 2025451343327191141,
-      "in_reply_to_status_id_str": "2025451343327191141",
-      "in_reply_to_user_id": 1742870617353760768,
-      "in_reply_to_user_id_str": "1742870617353760768",
-      "in_reply_to_screen_name": "Beast__07_",
-      "user": {
-        "id": 1271452542665240576,
-        "id_str": "1271452542665240576",
-        "name": "Ctrl C Ctrl Memes",
-        "screen_name": "Ctrlmemes_",
-        "location": "Heart of Rohit Sharma",
-        "url": "https://www.facebook.com/CtrlMemes",
-        "description": "Backup AC @ctrlmeme,\n\u2764\ufe0ffor all @ImRo45 @klrahul fans |\nFollow us @\nIG: https://t.co/oAwO7zHOJR | FB:  https://t.co/elXQzY7NRP\nDM for collaborat",
-        "protected": false,
-        "verified": true,
-        "followers_count": 15992,
-        "friends_count": 1203,
-        "listed_count": 24,
-        "favourites_count": 47354,
-        "statuses_count": 60491,
-        "created_at": "2020-06-12T14:41:33.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1271452542665240576/1762753786",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1664162177408794625/O1TZ6JeQ_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 0,
-      "retweet_count": 0,
-      "favorite_count": 0,
-      "views_count": 51,
-      "bookmark_count": 0,
-      "lang": "en",
-      "entities": {
-        "hashtags": [],
-        "media": [
-          {
-            "display_url": "pic.x.com/f11TZKJqv5",
-            "expanded_url": "https://x.com/Ctrlmemes_/status/2025452729079136284/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 202,
-                    "w": 202,
-                    "x": 346,
-                    "y": 116
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 202,
-                    "w": 202,
-                    "x": 346,
-                    "y": 116
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 202,
-                    "w": 202,
-                    "x": 346,
-                    "y": 116
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 114,
-                    "w": 114,
-                    "x": 196,
-                    "y": 65
-                  }
-                ]
-              }
-            },
-            "id_str": "2025452726612885506",
-            "indices": [
-              55,
-              78
-            ],
-            "media_key": "3_2025452726612885506",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025452726612885506"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvahgcbgAIVOOJ.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 672,
-                  "w": 1200,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 823,
-                  "w": 823,
-                  "x": 39,
-                  "y": 0
-                },
-                {
-                  "h": 823,
-                  "w": 722,
-                  "x": 89,
-                  "y": 0
-                },
-                {
-                  "h": 823,
-                  "w": 412,
-                  "x": 244,
-                  "y": 0
-                },
-                {
-                  "h": 823,
-                  "w": 1200,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 823,
-              "width": 1200
-            },
-            "sizes": {
-              "large": {
-                "h": 823,
-                "resize": "fit",
-                "w": 1200
-              },
-              "medium": {
-                "h": 823,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 466,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/f11TZKJqv5"
-          },
-          {
-            "display_url": "pic.x.com/f11TZKJqv5",
-            "expanded_url": "https://x.com/Ctrlmemes_/status/2025452729079136284/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 202,
-                    "w": 202,
-                    "x": 346,
-                    "y": 116
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 202,
-                    "w": 202,
-                    "x": 346,
-                    "y": 116
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 202,
-                    "w": 202,
-                    "x": 346,
-                    "y": 116
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 114,
-                    "w": 114,
-                    "x": 196,
-                    "y": 65
-                  }
-                ]
-              }
-            },
-            "id_str": "2025452726612885506",
-            "indices": [
-              55,
-              78
-            ],
-            "media_key": "3_2025452726612885506",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025452726612885506"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvahgcbgAIVOOJ.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 672,
-                  "w": 1200,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 823,
-                  "w": 823,
-                  "x": 39,
-                  "y": 0
-                },
-                {
-                  "h": 823,
-                  "w": 722,
-                  "x": 89,
-                  "y": 0
-                },
-                {
-                  "h": 823,
-                  "w": 412,
-                  "x": 244,
-                  "y": 0
-                },
-                {
-                  "h": 823,
-                  "w": 1200,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 823,
-              "width": 1200
-            },
-            "sizes": {
-              "large": {
-                "h": 823,
-                "resize": "fit",
-                "w": 1200
-              },
-              "medium": {
-                "h": 823,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 466,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/f11TZKJqv5"
-          }
-        ],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [
-          {
-            "id_str": "1742870617353760768",
-            "indices": [
-              0,
-              11
-            ],
-            "name": "Beast",
-            "screen_name": "Beast__07_"
-          }
-        ],
-        "display_text_range": [
-          12,
-          54
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025452447293210787": {
-      "tweet_created_at": "2026-02-22T06:07:49.000000Z",
-      "id": 2025452447293210787,
-      "id_str": "2025452447293210787",
-      "type": "tweet",
-      "conversation_id_str": "2025452447293210787",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "Cringe \ud83d\ude2d\ud83d\ude2d\ud83d\ude2d https://t.co/Wwt7RLQcbk",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": null,
-      "in_reply_to_status_id_str": null,
-      "in_reply_to_user_id": null,
-      "in_reply_to_user_id_str": null,
-      "in_reply_to_screen_name": null,
-      "user": {
-        "id": 1271452542665240576,
-        "id_str": "1271452542665240576",
-        "name": "Ctrl C Ctrl Memes",
-        "screen_name": "Ctrlmemes_",
-        "location": "Heart of Rohit Sharma",
-        "url": "https://www.facebook.com/CtrlMemes",
-        "description": "Backup AC @ctrlmeme,\n\u2764\ufe0ffor all @ImRo45 @klrahul fans |\nFollow us @\nIG: https://t.co/oAwO7zHOJR | FB:  https://t.co/elXQzY7NRP\nDM for collaborat",
-        "protected": false,
-        "verified": true,
-        "followers_count": 15992,
-        "friends_count": 1203,
-        "listed_count": 24,
-        "favourites_count": 47354,
-        "statuses_count": 60491,
-        "created_at": "2020-06-12T14:41:33.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1271452542665240576/1762753786",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1664162177408794625/O1TZ6JeQ_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 5,
-      "retweet_count": 1,
-      "favorite_count": 9,
-      "views_count": 107,
-      "bookmark_count": 0,
-      "lang": "en",
-      "entities": {
-        "hashtags": [],
-        "media": [
-          {
-            "display_url": "pic.x.com/Wwt7RLQcbk",
-            "expanded_url": "https://x.com/Ctrlmemes_/status/2025452447293210787/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 69,
-                    "w": 69,
-                    "x": 315,
-                    "y": 1441
-                  },
-                  {
-                    "h": 412,
-                    "w": 412,
-                    "x": 967,
-                    "y": 603
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 43,
-                    "w": 43,
-                    "x": 196,
-                    "y": 900
-                  },
-                  {
-                    "h": 257,
-                    "w": 257,
-                    "x": 604,
-                    "y": 376
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 69,
-                    "w": 69,
-                    "x": 315,
-                    "y": 1441
-                  },
-                  {
-                    "h": 412,
-                    "w": 412,
-                    "x": 967,
-                    "y": 603
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 24,
-                    "w": 24,
-                    "x": 111,
-                    "y": 510
-                  },
-                  {
-                    "h": 145,
-                    "w": 145,
-                    "x": 342,
-                    "y": 213
-                  }
-                ]
-              }
-            },
-            "id_str": "2025452444357148672",
-            "indices": [
-              11,
-              34
-            ],
-            "media_key": "3_2025452444357148672",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025452444357148672"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvaRE9awAAmvfI.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 1075,
-                  "w": 1920,
-                  "x": 0,
-                  "y": 279
-                },
-                {
-                  "h": 1616,
-                  "w": 1616,
-                  "x": 304,
-                  "y": 0
-                },
-                {
-                  "h": 1616,
-                  "w": 1418,
-                  "x": 502,
-                  "y": 0
-                },
-                {
-                  "h": 1616,
-                  "w": 808,
-                  "x": 892,
-                  "y": 0
-                },
-                {
-                  "h": 1616,
-                  "w": 1920,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 1616,
-              "width": 1920
-            },
-            "sizes": {
-              "large": {
-                "h": 1616,
-                "resize": "fit",
-                "w": 1920
-              },
-              "medium": {
-                "h": 1010,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 572,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/Wwt7RLQcbk"
-          },
-          {
-            "display_url": "pic.x.com/Wwt7RLQcbk",
-            "expanded_url": "https://x.com/Ctrlmemes_/status/2025452447293210787/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 69,
-                    "w": 69,
-                    "x": 315,
-                    "y": 1441
-                  },
-                  {
-                    "h": 412,
-                    "w": 412,
-                    "x": 967,
-                    "y": 603
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 43,
-                    "w": 43,
-                    "x": 196,
-                    "y": 900
-                  },
-                  {
-                    "h": 257,
-                    "w": 257,
-                    "x": 604,
-                    "y": 376
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 69,
-                    "w": 69,
-                    "x": 315,
-                    "y": 1441
-                  },
-                  {
-                    "h": 412,
-                    "w": 412,
-                    "x": 967,
-                    "y": 603
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 24,
-                    "w": 24,
-                    "x": 111,
-                    "y": 510
-                  },
-                  {
-                    "h": 145,
-                    "w": 145,
-                    "x": 342,
-                    "y": 213
-                  }
-                ]
-              }
-            },
-            "id_str": "2025452444357148672",
-            "indices": [
-              11,
-              34
-            ],
-            "media_key": "3_2025452444357148672",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025452444357148672"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvaRE9awAAmvfI.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 1075,
-                  "w": 1920,
-                  "x": 0,
-                  "y": 279
-                },
-                {
-                  "h": 1616,
-                  "w": 1616,
-                  "x": 304,
-                  "y": 0
-                },
-                {
-                  "h": 1616,
-                  "w": 1418,
-                  "x": 502,
-                  "y": 0
-                },
-                {
-                  "h": 1616,
-                  "w": 808,
-                  "x": 892,
-                  "y": 0
-                },
-                {
-                  "h": 1616,
-                  "w": 1920,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 1616,
-              "width": 1920
-            },
-            "sizes": {
-              "large": {
-                "h": 1616,
-                "resize": "fit",
-                "w": 1920
-              },
-              "medium": {
-                "h": 1010,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 572,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/Wwt7RLQcbk"
-          }
-        ],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [],
-        "display_text_range": [
-          0,
-          10
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025450667134026057": {
-      "tweet_created_at": "2026-02-22T06:00:44.000000Z",
-      "id": 2025450667134026057,
-      "id_str": "2025450667134026057",
-      "type": "reply",
-      "conversation_id_str": "2025423414983614939",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "@Rahulify1 37",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": 2025423414983614939,
-      "in_reply_to_status_id_str": "2025423414983614939",
-      "in_reply_to_user_id": 2001164157257932801,
-      "in_reply_to_user_id_str": "2001164157257932801",
-      "in_reply_to_screen_name": "Rahulify1",
-      "user": {
-        "id": 743735095308099585,
-        "id_str": "743735095308099585",
-        "name": "Johns.",
-        "screen_name": "CricCrazyJohns",
-        "location": "India ",
-        "url": "https://whatsapp.com/channel/0029VbC3Se9DJ6Gx7jzojY0i",
-        "description": "Cricket fan for life, DM for Collaboration, Tips on in Profile\ud83e\udd1e",
-        "protected": false,
-        "verified": true,
-        "followers_count": 698824,
-        "friends_count": 567,
-        "listed_count": 1222,
-        "favourites_count": 124149,
-        "statuses_count": 441647,
-        "created_at": "2016-06-17T09:20:39.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/743735095308099585/1770298694",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1878716552327086080/svu2jQwS_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 1,
-      "retweet_count": 0,
-      "favorite_count": 1,
-      "views_count": 237,
-      "bookmark_count": 0,
-      "lang": "und",
-      "entities": {
-        "hashtags": [],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [
-          {
-            "id_str": "2001164157257932801",
-            "indices": [
-              0,
-              10
-            ],
-            "name": "Rahulify\u00b9",
-            "screen_name": "Rahulify1"
-          }
-        ],
-        "display_text_range": [
-          11,
-          13
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025450418906824730": {
-      "tweet_created_at": "2026-02-22T05:59:45.000000Z",
-      "id": 2025450418906824730,
-      "id_str": "2025450418906824730",
-      "type": "reply",
-      "conversation_id_str": "2025432242064162896",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "@Atharb_ @Rahulify1 31",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": 2025432242064162896,
-      "in_reply_to_status_id_str": "2025432242064162896",
-      "in_reply_to_user_id": 1653421108085899265,
-      "in_reply_to_user_id_str": "1653421108085899265",
-      "in_reply_to_screen_name": "Atharb_",
-      "user": {
-        "id": 743735095308099585,
-        "id_str": "743735095308099585",
-        "name": "Johns.",
-        "screen_name": "CricCrazyJohns",
-        "location": "India ",
-        "url": "https://whatsapp.com/channel/0029VbC3Se9DJ6Gx7jzojY0i",
-        "description": "Cricket fan for life, DM for Collaboration, Tips on in Profile\ud83e\udd1e",
-        "protected": false,
-        "verified": true,
-        "followers_count": 698824,
-        "friends_count": 567,
-        "listed_count": 1222,
-        "favourites_count": 124149,
-        "statuses_count": 441647,
-        "created_at": "2016-06-17T09:20:39.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/743735095308099585/1770298694",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1878716552327086080/svu2jQwS_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 1,
-      "retweet_count": 0,
-      "favorite_count": 2,
-      "views_count": 213,
-      "bookmark_count": 0,
-      "lang": "und",
-      "entities": {
-        "hashtags": [],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [
-          {
-            "id_str": "1653421108085899265",
-            "indices": [
-              0,
-              8
-            ],
-            "name": "Atharv Shukla",
-            "screen_name": "Atharb_"
-          },
-          {
-            "id_str": "2001164157257932801",
-            "indices": [
-              9,
-              19
-            ],
-            "name": "Rahulify\u00b9",
-            "screen_name": "Rahulify1"
-          }
-        ],
-        "display_text_range": [
-          20,
-          22
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025450372932976935": {
-      "tweet_created_at": "2026-02-22T05:59:34.000000Z",
-      "id": 2025450372932976935,
-      "id_str": "2025450372932976935",
-      "type": "reply",
-      "conversation_id_str": "2025431062315499907",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "@MaheshJain68174 @1DAVID92 @achyutmis22 @Anshul__999 @cricketangon @GarhManmohan @trueictfan_07 @0z_Sunny @m @NitRo_264 33",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": 2025431062315499907,
-      "in_reply_to_status_id_str": "2025431062315499907",
-      "in_reply_to_user_id": 1876168083506929664,
-      "in_reply_to_user_id_str": "1876168083506929664",
-      "in_reply_to_screen_name": "MaheshJain68174",
-      "user": {
-        "id": 743735095308099585,
-        "id_str": "743735095308099585",
-        "name": "Johns.",
-        "screen_name": "CricCrazyJohns",
-        "location": "India ",
-        "url": "https://whatsapp.com/channel/0029VbC3Se9DJ6Gx7jzojY0i",
-        "description": "Cricket fan for life, DM for Collaboration, Tips on in Profile\ud83e\udd1e",
-        "protected": false,
-        "verified": true,
-        "followers_count": 698824,
-        "friends_count": 567,
-        "listed_count": 1222,
-        "favourites_count": 124149,
-        "statuses_count": 441647,
-        "created_at": "2016-06-17T09:20:39.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/743735095308099585/1770298694",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1878716552327086080/svu2jQwS_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 0,
-      "retweet_count": 0,
-      "favorite_count": 0,
-      "views_count": 128,
-      "bookmark_count": 0,
-      "lang": "und",
-      "entities": {
-        "hashtags": [],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [
-          {
-            "id_str": "1876168083506929664",
-            "indices": [
-              0,
-              16
-            ],
-            "name": "Indian First",
-            "screen_name": "MaheshJain68174"
-          },
-          {
-            "id_str": "1842125515421024256",
-            "indices": [
-              17,
-              26
-            ],
-            "name": "DAVID",
-            "screen_name": "1DAVID92"
-          },
-          {
-            "id_str": "1214094269247442944",
-            "indices": [
-              27,
-              39
-            ],
-            "name": "Achyut Mishra",
-            "screen_name": "achyutmis22"
-          },
-          {
-            "id_str": "1974164725639622657",
-            "indices": [
-              40,
-              52
-            ],
-            "name": "ANSHUL .",
-            "screen_name": "Anshul__999"
-          },
-          {
-            "id_str": "1547799550328729601",
-            "indices": [
-              53,
-              66
-            ],
-            "name": "Cricketangon",
-            "screen_name": "cricketangon"
-          },
-          {
-            "id_str": "1896064324348887042",
-            "indices": [
-              67,
-              80
-            ],
-            "name": "Manmohan",
-            "screen_name": "GarhManmohan"
-          },
-          {
-            "id_str": "1693851371202830336",
-            "indices": [
-              81,
-              95
-            ],
-            "name": "SHAKTI",
-            "screen_name": "trueictfan_07"
-          },
-          {
-            "id_str": "838072033296658433",
-            "indices": [
-              96,
-              105
-            ],
-            "name": "\uff33\uff35\uff2e\uff2e\uff39",
-            "screen_name": "0z_Sunny"
-          },
-          {
-            "id_str": "1959113087094857729",
-            "indices": [
-              106,
-              108
-            ],
-            "name": "Mika",
-            "screen_name": "m"
-          },
-          {
-            "id_str": "1662136063928971264",
-            "indices": [
-              109,
-              119
-            ],
-            "name": "\ud835\udc0d\ud835\udc08\ud835\udc13\ud835\udc08\ud835\udc0d",
-            "screen_name": "NitRo_264"
-          }
-        ],
-        "display_text_range": [
-          120,
-          122
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025450358034616367": {
-      "tweet_created_at": "2026-02-22T05:59:31.000000Z",
-      "id": 2025450358034616367,
-      "id_str": "2025450358034616367",
-      "type": "tweet",
-      "conversation_id_str": "2025450358034616367",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "In an interview, Varun Chakaravarthy shared a touching perspective on money and luxury:\n\n\"I feel that instead of just changing your own lifestyle with money, the power to change someone else\u2019s life is far greater. I would feel guilty if I spent excessively. If I own a watch worth \u20b930 lakh or \u20b940 lakh, that same amount could actually transform someone\u2019s life or the future of two or three generations.\u00a0\n\nHe once bought a watch for \u20b93 lakh, but even that weighed heavily on his conscience. He felt a sense of shame wearing it in front of his friends who were struggling financially.\"",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": null,
-      "in_reply_to_status_id_str": null,
-      "in_reply_to_user_id": null,
-      "in_reply_to_user_id_str": null,
-      "in_reply_to_screen_name": null,
-      "user": {
-        "id": 1732745916095025152,
-        "id_str": "1732745916095025152",
-        "name": "Cricket Central",
-        "screen_name": "CricketCentrl",
-        "location": "",
-        "url": null,
-        "description": "India Team | Cricket Lover | IPL | Cricket Update |",
-        "protected": false,
-        "verified": true,
-        "followers_count": 4437,
-        "friends_count": 705,
-        "listed_count": 3,
-        "favourites_count": 857,
-        "statuses_count": 4308,
-        "created_at": "2023-12-07T12:56:53.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1732745916095025152/1767132528",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/2007050367327174656/9lh3MRBx_normal.jpg",
-        "can_dm": false,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 2,
-      "retweet_count": 0,
-      "favorite_count": 3,
-      "views_count": 106,
-      "bookmark_count": 1,
-      "lang": "en",
-      "entities": {
-        "hashtags": [],
-        "media": [
-          {
-            "display_url": "pic.x.com/CrJnSGd8Os",
-            "expanded_url": "https://x.com/CricketCentrl/status/2025450358034616367/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 241,
-                    "w": 241,
-                    "x": 442,
-                    "y": 82
-                  },
-                  {
-                    "h": 226,
-                    "w": 226,
-                    "x": 290,
-                    "y": 234
-                  },
-                  {
-                    "h": 312,
-                    "w": 312,
-                    "x": 393,
-                    "y": 353
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 241,
-                    "w": 241,
-                    "x": 442,
-                    "y": 82
-                  },
-                  {
-                    "h": 226,
-                    "w": 226,
-                    "x": 290,
-                    "y": 234
-                  },
-                  {
-                    "h": 312,
-                    "w": 312,
-                    "x": 393,
-                    "y": 353
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 241,
-                    "w": 241,
-                    "x": 442,
-                    "y": 82
-                  },
-                  {
-                    "h": 226,
-                    "w": 226,
-                    "x": 290,
-                    "y": 234
-                  },
-                  {
-                    "h": 312,
-                    "w": 312,
-                    "x": 393,
-                    "y": 353
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 136,
-                    "w": 136,
-                    "x": 250,
-                    "y": 46
-                  },
-                  {
-                    "h": 128,
-                    "w": 128,
-                    "x": 164,
-                    "y": 132
-                  },
-                  {
-                    "h": 176,
-                    "w": 176,
-                    "x": 222,
-                    "y": 200
-                  }
-                ]
-              }
-            },
-            "id_str": "2025450341064736771",
-            "indices": [
-              281,
-              304
-            ],
-            "media_key": "3_2025450341064736771",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025450341064736771"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvYWplbgAMonZD.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 672,
-                  "w": 1200,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 738,
-                  "w": 738,
-                  "x": 200,
-                  "y": 0
-                },
-                {
-                  "h": 738,
-                  "w": 647,
-                  "x": 246,
-                  "y": 0
-                },
-                {
-                  "h": 738,
-                  "w": 369,
-                  "x": 385,
-                  "y": 0
-                },
-                {
-                  "h": 738,
-                  "w": 1200,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 738,
-              "width": 1200
-            },
-            "sizes": {
-              "large": {
-                "h": 738,
-                "resize": "fit",
-                "w": 1200
-              },
-              "medium": {
-                "h": 738,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 418,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/CrJnSGd8Os"
-          },
-          {
-            "display_url": "pic.x.com/CrJnSGd8Os",
-            "expanded_url": "https://x.com/CricketCentrl/status/2025450358034616367/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 241,
-                    "w": 241,
-                    "x": 442,
-                    "y": 82
-                  },
-                  {
-                    "h": 226,
-                    "w": 226,
-                    "x": 290,
-                    "y": 234
-                  },
-                  {
-                    "h": 312,
-                    "w": 312,
-                    "x": 393,
-                    "y": 353
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 241,
-                    "w": 241,
-                    "x": 442,
-                    "y": 82
-                  },
-                  {
-                    "h": 226,
-                    "w": 226,
-                    "x": 290,
-                    "y": 234
-                  },
-                  {
-                    "h": 312,
-                    "w": 312,
-                    "x": 393,
-                    "y": 353
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 241,
-                    "w": 241,
-                    "x": 442,
-                    "y": 82
-                  },
-                  {
-                    "h": 226,
-                    "w": 226,
-                    "x": 290,
-                    "y": 234
-                  },
-                  {
-                    "h": 312,
-                    "w": 312,
-                    "x": 393,
-                    "y": 353
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 136,
-                    "w": 136,
-                    "x": 250,
-                    "y": 46
-                  },
-                  {
-                    "h": 128,
-                    "w": 128,
-                    "x": 164,
-                    "y": 132
-                  },
-                  {
-                    "h": 176,
-                    "w": 176,
-                    "x": 222,
-                    "y": 200
-                  }
-                ]
-              }
-            },
-            "id_str": "2025450341064736771",
-            "indices": [
-              281,
-              304
-            ],
-            "media_key": "3_2025450341064736771",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025450341064736771"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvYWplbgAMonZD.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 672,
-                  "w": 1200,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 738,
-                  "w": 738,
-                  "x": 200,
-                  "y": 0
-                },
-                {
-                  "h": 738,
-                  "w": 647,
-                  "x": 246,
-                  "y": 0
-                },
-                {
-                  "h": 738,
-                  "w": 369,
-                  "x": 385,
-                  "y": 0
-                },
-                {
-                  "h": 738,
-                  "w": 1200,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 738,
-              "width": 1200
-            },
-            "sizes": {
-              "large": {
-                "h": 738,
-                "resize": "fit",
-                "w": 1200
-              },
-              "medium": {
-                "h": 738,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 418,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/CrJnSGd8Os"
-          }
-        ],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [],
-        "display_text_range": [
-          0,
-          280
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025449940399653140": {
-      "tweet_created_at": "2026-02-22T05:57:51.000000Z",
-      "id": 2025449940399653140,
-      "id_str": "2025449940399653140",
-      "type": "reply",
-      "conversation_id_str": "2025447838143152458",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "@Kushacritic I tried but bhabi face got changed \ud83d\ude2d https://t.co/fJtrSqFnOt",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": 2025447838143152458,
-      "in_reply_to_status_id_str": "2025447838143152458",
-      "in_reply_to_user_id": 1617914907437207553,
-      "in_reply_to_user_id_str": "1617914907437207553",
-      "in_reply_to_screen_name": "Kushacritic",
-      "user": {
-        "id": 1271452542665240576,
-        "id_str": "1271452542665240576",
-        "name": "Ctrl C Ctrl Memes",
-        "screen_name": "Ctrlmemes_",
-        "location": "Heart of Rohit Sharma",
-        "url": "https://www.facebook.com/CtrlMemes",
-        "description": "Backup AC @ctrlmeme,\n\u2764\ufe0ffor all @ImRo45 @klrahul fans |\nFollow us @\nIG: https://t.co/oAwO7zHOJR | FB:  https://t.co/elXQzY7NRP\nDM for collaborat",
-        "protected": false,
-        "verified": true,
-        "followers_count": 15992,
-        "friends_count": 1203,
-        "listed_count": 24,
-        "favourites_count": 47354,
-        "statuses_count": 60491,
-        "created_at": "2020-06-12T14:41:33.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1271452542665240576/1762753786",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1664162177408794625/O1TZ6JeQ_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 1,
-      "retweet_count": 0,
-      "favorite_count": 0,
-      "views_count": 56,
-      "bookmark_count": 0,
-      "lang": "en",
-      "entities": {
-        "hashtags": [],
-        "media": [
-          {
-            "display_url": "pic.x.com/fJtrSqFnOt",
-            "expanded_url": "https://x.com/Ctrlmemes_/status/2025449940399653140/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 70,
-                    "w": 70,
-                    "x": 601,
-                    "y": 405
-                  },
-                  {
-                    "h": 123,
-                    "w": 123,
-                    "x": 855,
-                    "y": 216
-                  },
-                  {
-                    "h": 111,
-                    "w": 111,
-                    "x": 586,
-                    "y": 306
-                  },
-                  {
-                    "h": 132,
-                    "w": 132,
-                    "x": 1102,
-                    "y": 193
-                  },
-                  {
-                    "h": 148,
-                    "w": 148,
-                    "x": 361,
-                    "y": 181
-                  },
-                  {
-                    "h": 154,
-                    "w": 154,
-                    "x": 813,
-                    "y": 456
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 54,
-                    "w": 54,
-                    "x": 469,
-                    "y": 316
-                  },
-                  {
-                    "h": 96,
-                    "w": 96,
-                    "x": 667,
-                    "y": 168
-                  },
-                  {
-                    "h": 86,
-                    "w": 86,
-                    "x": 457,
-                    "y": 239
-                  },
-                  {
-                    "h": 103,
-                    "w": 103,
-                    "x": 860,
-                    "y": 150
-                  },
-                  {
-                    "h": 115,
-                    "w": 115,
-                    "x": 282,
-                    "y": 141
-                  },
-                  {
-                    "h": 120,
-                    "w": 120,
-                    "x": 635,
-                    "y": 356
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 70,
-                    "w": 70,
-                    "x": 601,
-                    "y": 405
-                  },
-                  {
-                    "h": 123,
-                    "w": 123,
-                    "x": 855,
-                    "y": 216
-                  },
-                  {
-                    "h": 111,
-                    "w": 111,
-                    "x": 586,
-                    "y": 306
-                  },
-                  {
-                    "h": 132,
-                    "w": 132,
-                    "x": 1102,
-                    "y": 193
-                  },
-                  {
-                    "h": 148,
-                    "w": 148,
-                    "x": 361,
-                    "y": 181
-                  },
-                  {
-                    "h": 154,
-                    "w": 154,
-                    "x": 813,
-                    "y": 456
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 30,
-                    "w": 30,
-                    "x": 266,
-                    "y": 179
-                  },
-                  {
-                    "h": 54,
-                    "w": 54,
-                    "x": 378,
-                    "y": 95
-                  },
-                  {
-                    "h": 49,
-                    "w": 49,
-                    "x": 259,
-                    "y": 135
-                  },
-                  {
-                    "h": 58,
-                    "w": 58,
-                    "x": 487,
-                    "y": 85
-                  },
-                  {
-                    "h": 65,
-                    "w": 65,
-                    "x": 159,
-                    "y": 80
-                  },
-                  {
-                    "h": 68,
-                    "w": 68,
-                    "x": 359,
-                    "y": 201
-                  }
-                ]
-              }
-            },
-            "id_str": "2025449936985468928",
-            "indices": [
-              50,
-              73
-            ],
-            "media_key": "3_2025449936985468928",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025449936985468928"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvX_IRbMAANtqK.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 860,
-                  "w": 1536,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 1024,
-                  "w": 1024,
-                  "x": 512,
-                  "y": 0
-                },
-                {
-                  "h": 1024,
-                  "w": 898,
-                  "x": 638,
-                  "y": 0
-                },
-                {
-                  "h": 1024,
-                  "w": 512,
-                  "x": 934,
-                  "y": 0
-                },
-                {
-                  "h": 1024,
-                  "w": 1536,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 1024,
-              "width": 1536
-            },
-            "sizes": {
-              "large": {
-                "h": 1024,
-                "resize": "fit",
-                "w": 1536
-              },
-              "medium": {
-                "h": 800,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 453,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/fJtrSqFnOt"
-          },
-          {
-            "display_url": "pic.x.com/fJtrSqFnOt",
-            "expanded_url": "https://x.com/Ctrlmemes_/status/2025449940399653140/photo/1",
-            "ext_media_availability": {
-              "status": "Available"
-            },
-            "features": {
-              "large": {
-                "faces": [
-                  {
-                    "h": 70,
-                    "w": 70,
-                    "x": 601,
-                    "y": 405
-                  },
-                  {
-                    "h": 123,
-                    "w": 123,
-                    "x": 855,
-                    "y": 216
-                  },
-                  {
-                    "h": 111,
-                    "w": 111,
-                    "x": 586,
-                    "y": 306
-                  },
-                  {
-                    "h": 132,
-                    "w": 132,
-                    "x": 1102,
-                    "y": 193
-                  },
-                  {
-                    "h": 148,
-                    "w": 148,
-                    "x": 361,
-                    "y": 181
-                  },
-                  {
-                    "h": 154,
-                    "w": 154,
-                    "x": 813,
-                    "y": 456
-                  }
-                ]
-              },
-              "medium": {
-                "faces": [
-                  {
-                    "h": 54,
-                    "w": 54,
-                    "x": 469,
-                    "y": 316
-                  },
-                  {
-                    "h": 96,
-                    "w": 96,
-                    "x": 667,
-                    "y": 168
-                  },
-                  {
-                    "h": 86,
-                    "w": 86,
-                    "x": 457,
-                    "y": 239
-                  },
-                  {
-                    "h": 103,
-                    "w": 103,
-                    "x": 860,
-                    "y": 150
-                  },
-                  {
-                    "h": 115,
-                    "w": 115,
-                    "x": 282,
-                    "y": 141
-                  },
-                  {
-                    "h": 120,
-                    "w": 120,
-                    "x": 635,
-                    "y": 356
-                  }
-                ]
-              },
-              "orig": {
-                "faces": [
-                  {
-                    "h": 70,
-                    "w": 70,
-                    "x": 601,
-                    "y": 405
-                  },
-                  {
-                    "h": 123,
-                    "w": 123,
-                    "x": 855,
-                    "y": 216
-                  },
-                  {
-                    "h": 111,
-                    "w": 111,
-                    "x": 586,
-                    "y": 306
-                  },
-                  {
-                    "h": 132,
-                    "w": 132,
-                    "x": 1102,
-                    "y": 193
-                  },
-                  {
-                    "h": 148,
-                    "w": 148,
-                    "x": 361,
-                    "y": 181
-                  },
-                  {
-                    "h": 154,
-                    "w": 154,
-                    "x": 813,
-                    "y": 456
-                  }
-                ]
-              },
-              "small": {
-                "faces": [
-                  {
-                    "h": 30,
-                    "w": 30,
-                    "x": 266,
-                    "y": 179
-                  },
-                  {
-                    "h": 54,
-                    "w": 54,
-                    "x": 378,
-                    "y": 95
-                  },
-                  {
-                    "h": 49,
-                    "w": 49,
-                    "x": 259,
-                    "y": 135
-                  },
-                  {
-                    "h": 58,
-                    "w": 58,
-                    "x": 487,
-                    "y": 85
-                  },
-                  {
-                    "h": 65,
-                    "w": 65,
-                    "x": 159,
-                    "y": 80
-                  },
-                  {
-                    "h": 68,
-                    "w": 68,
-                    "x": 359,
-                    "y": 201
-                  }
-                ]
-              }
-            },
-            "id_str": "2025449936985468928",
-            "indices": [
-              50,
-              73
-            ],
-            "media_key": "3_2025449936985468928",
-            "media_results": {
-              "result": {
-                "media_key": "3_2025449936985468928"
-              }
-            },
-            "media_url_https": "https://pbs.twimg.com/media/HBvX_IRbMAANtqK.jpg",
-            "original_info": {
-              "focus_rects": [
-                {
-                  "h": 860,
-                  "w": 1536,
-                  "x": 0,
-                  "y": 0
-                },
-                {
-                  "h": 1024,
-                  "w": 1024,
-                  "x": 512,
-                  "y": 0
-                },
-                {
-                  "h": 1024,
-                  "w": 898,
-                  "x": 638,
-                  "y": 0
-                },
-                {
-                  "h": 1024,
-                  "w": 512,
-                  "x": 934,
-                  "y": 0
-                },
-                {
-                  "h": 1024,
-                  "w": 1536,
-                  "x": 0,
-                  "y": 0
-                }
-              ],
-              "height": 1024,
-              "width": 1536
-            },
-            "sizes": {
-              "large": {
-                "h": 1024,
-                "resize": "fit",
-                "w": 1536
-              },
-              "medium": {
-                "h": 800,
-                "resize": "fit",
-                "w": 1200
-              },
-              "small": {
-                "h": 453,
-                "resize": "fit",
-                "w": 680
-              },
-              "thumb": {
-                "h": 150,
-                "resize": "crop",
-                "w": 150
-              }
-            },
-            "type": "photo",
-            "url": "https://t.co/fJtrSqFnOt"
-          }
-        ],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [
-          {
-            "id_str": "1617914907437207553",
-            "indices": [
-              0,
-              12
-            ],
-            "name": "Kusha Sharma \uea00",
-            "screen_name": "Kushacritic"
-          }
-        ],
-        "display_text_range": [
-          13,
-          49
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025449335048356081": {
-      "tweet_created_at": "2026-02-22T05:55:27.000000Z",
-      "id": 2025449335048356081,
-      "id_str": "2025449335048356081",
-      "type": "reply",
-      "conversation_id_str": "2025439997063823612",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "@saksham546aj Shameless icc \ud83d\udc94",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": 2025449101614334260,
-      "in_reply_to_status_id_str": "2025449101614334260",
-      "in_reply_to_user_id": 2019826401067806720,
-      "in_reply_to_user_id_str": "2019826401067806720",
-      "in_reply_to_screen_name": "saksham546aj",
-      "user": {
-        "id": 1271452542665240576,
-        "id_str": "1271452542665240576",
-        "name": "Ctrl C Ctrl Memes",
-        "screen_name": "Ctrlmemes_",
-        "location": "Heart of Rohit Sharma",
-        "url": "https://www.facebook.com/CtrlMemes",
-        "description": "Backup AC @ctrlmeme,\n\u2764\ufe0ffor all @ImRo45 @klrahul fans |\nFollow us @\nIG: https://t.co/oAwO7zHOJR | FB:  https://t.co/elXQzY7NRP\nDM for collaborat",
-        "protected": false,
-        "verified": true,
-        "followers_count": 15992,
-        "friends_count": 1203,
-        "listed_count": 24,
-        "favourites_count": 47354,
-        "statuses_count": 60491,
-        "created_at": "2020-06-12T14:41:33.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1271452542665240576/1762753786",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1664162177408794625/O1TZ6JeQ_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 0,
-      "retweet_count": 0,
-      "favorite_count": 0,
-      "views_count": 12,
-      "bookmark_count": 0,
-      "lang": "en",
-      "entities": {
-        "hashtags": [],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [
-          {
-            "id_str": "2019826401067806720",
-            "indices": [
-              0,
-              13
-            ],
-            "name": "anisha",
-            "screen_name": "saksham546aj"
-          }
-        ],
-        "display_text_range": [
-          14,
-          29
-        ]
-      },
-      "is_pinned": false
-    },
-    "2025446610910740889": {
-      "tweet_created_at": "2026-02-22T05:44:37.000000Z",
-      "id": 2025446610910740889,
-      "id_str": "2025446610910740889",
-      "type": "reply",
-      "conversation_id_str": "2025439997063823612",
-      "community_id_str": null,
-      "community_name": null,
-      "text": null,
-      "full_text": "@cric9572 Rehne wale ko Sharam nhi hai muje kyu hogi",
-      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
-      "truncated": false,
-      "in_reply_to_status_id": 2025443381485428937,
-      "in_reply_to_status_id_str": "2025443381485428937",
-      "in_reply_to_user_id": 2014547029121499145,
-      "in_reply_to_user_id_str": "2014547029121499145",
-      "in_reply_to_screen_name": "cric9572",
-      "user": {
-        "id": 1271452542665240576,
-        "id_str": "1271452542665240576",
-        "name": "Ctrl C Ctrl Memes",
-        "screen_name": "Ctrlmemes_",
-        "location": "Heart of Rohit Sharma",
-        "url": "https://www.facebook.com/CtrlMemes",
-        "description": "Backup AC @ctrlmeme,\n\u2764\ufe0ffor all @ImRo45 @klrahul fans |\nFollow us @\nIG: https://t.co/oAwO7zHOJR | FB:  https://t.co/elXQzY7NRP\nDM for collaborat",
-        "protected": false,
-        "verified": true,
-        "followers_count": 15992,
-        "friends_count": 1203,
-        "listed_count": 24,
-        "favourites_count": 47354,
-        "statuses_count": 60491,
-        "created_at": "2020-06-12T14:41:33.000000Z",
-        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1271452542665240576/1762753786",
-        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1664162177408794625/O1TZ6JeQ_normal.jpg",
-        "can_dm": true,
-        "affiliation_label": null
-      },
-      "quoted_status_id": null,
-      "quoted_status_id_str": null,
-      "is_quote_status": false,
-      "quoted_status": null,
-      "retweeted_status": null,
-      "quote_count": 0,
-      "reply_count": 0,
-      "retweet_count": 0,
-      "favorite_count": 0,
-      "views_count": 14,
-      "bookmark_count": 0,
-      "lang": "hi",
-      "entities": {
-        "hashtags": [],
-        "symbols": [],
-        "timestamps": [],
-        "urls": [],
-        "user_mentions": [
-          {
-            "id_str": "2014547029121499145",
-            "indices": [
-              0,
-              9
-            ],
-            "name": "Cricstump",
-            "screen_name": "cric9572"
-          }
-        ],
-        "display_text_range": [
-          10,
-          52
-        ]
-      },
-      "is_pinned": false
-    },
     "2025442741493399724": {
       "tweet_created_at": "2026-02-22T05:29:15.000000Z",
       "id": 2025442741493399724,
@@ -4798,20 +2217,1422 @@
         ]
       },
       "is_pinned": false
+    },
+    "2025461459665432822": {
+      "tweet_created_at": "2026-02-22T06:43:37.000000Z",
+      "id": 2025461459665432822,
+      "id_str": "2025461459665432822",
+      "type": "tweet",
+      "conversation_id_str": "2025461459665432822",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "Owner of SS bats with Rohit Sharma during Shikhar Dhawan's Wedding \ud83d\udd25 https://t.co/Y5Wgb3ZBaX",
+      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 743735095308099585,
+        "id_str": "743735095308099585",
+        "name": "Johns.",
+        "screen_name": "CricCrazyJohns",
+        "location": "India ",
+        "url": "https://whatsapp.com/channel/0029VbC3Se9DJ6Gx7jzojY0i",
+        "description": "Cricket fan for life, DM for Collaboration, Tips on in Profile\ud83e\udd1e",
+        "protected": false,
+        "verified": true,
+        "followers_count": 698829,
+        "friends_count": 567,
+        "listed_count": 1222,
+        "favourites_count": 124149,
+        "statuses_count": 441649,
+        "created_at": "2016-06-17T09:20:39.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/743735095308099585/1770298694",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1878716552327086080/svu2jQwS_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 0,
+      "reply_count": 7,
+      "retweet_count": 1,
+      "favorite_count": 16,
+      "views_count": 100,
+      "bookmark_count": 0,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "display_url": "pic.x.com/Y5Wgb3ZBaX",
+            "expanded_url": "https://x.com/CricCrazyJohns/status/2025461459665432822/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 164,
+                    "w": 164,
+                    "x": 645,
+                    "y": 208
+                  },
+                  {
+                    "h": 198,
+                    "w": 198,
+                    "x": 369,
+                    "y": 126
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 161,
+                    "w": 161,
+                    "x": 634,
+                    "y": 204
+                  },
+                  {
+                    "h": 194,
+                    "w": 194,
+                    "x": 362,
+                    "y": 123
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 164,
+                    "w": 164,
+                    "x": 645,
+                    "y": 208
+                  },
+                  {
+                    "h": 198,
+                    "w": 198,
+                    "x": 369,
+                    "y": 126
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 91,
+                    "w": 91,
+                    "x": 359,
+                    "y": 115
+                  },
+                  {
+                    "h": 110,
+                    "w": 110,
+                    "x": 205,
+                    "y": 70
+                  }
+                ]
+              }
+            },
+            "id_str": "2025461456905584640",
+            "indices": [
+              69,
+              92
+            ],
+            "media_key": "3_2025461456905584640",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025461456905584640"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBvidrUaQAAObIs.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 683,
+                  "w": 1220,
+                  "x": 0,
+                  "y": 409
+                },
+                {
+                  "h": 1092,
+                  "w": 1092,
+                  "x": 128,
+                  "y": 0
+                },
+                {
+                  "h": 1092,
+                  "w": 958,
+                  "x": 262,
+                  "y": 0
+                },
+                {
+                  "h": 1092,
+                  "w": 546,
+                  "x": 674,
+                  "y": 0
+                },
+                {
+                  "h": 1092,
+                  "w": 1220,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 1092,
+              "width": 1220
+            },
+            "sizes": {
+              "large": {
+                "h": 1092,
+                "resize": "fit",
+                "w": 1220
+              },
+              "medium": {
+                "h": 1074,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 609,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/Y5Wgb3ZBaX"
+          },
+          {
+            "display_url": "pic.x.com/Y5Wgb3ZBaX",
+            "expanded_url": "https://x.com/CricCrazyJohns/status/2025461459665432822/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 164,
+                    "w": 164,
+                    "x": 645,
+                    "y": 208
+                  },
+                  {
+                    "h": 198,
+                    "w": 198,
+                    "x": 369,
+                    "y": 126
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 161,
+                    "w": 161,
+                    "x": 634,
+                    "y": 204
+                  },
+                  {
+                    "h": 194,
+                    "w": 194,
+                    "x": 362,
+                    "y": 123
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 164,
+                    "w": 164,
+                    "x": 645,
+                    "y": 208
+                  },
+                  {
+                    "h": 198,
+                    "w": 198,
+                    "x": 369,
+                    "y": 126
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 91,
+                    "w": 91,
+                    "x": 359,
+                    "y": 115
+                  },
+                  {
+                    "h": 110,
+                    "w": 110,
+                    "x": 205,
+                    "y": 70
+                  }
+                ]
+              }
+            },
+            "id_str": "2025461456905584640",
+            "indices": [
+              69,
+              92
+            ],
+            "media_key": "3_2025461456905584640",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025461456905584640"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBvidrUaQAAObIs.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 683,
+                  "w": 1220,
+                  "x": 0,
+                  "y": 409
+                },
+                {
+                  "h": 1092,
+                  "w": 1092,
+                  "x": 128,
+                  "y": 0
+                },
+                {
+                  "h": 1092,
+                  "w": 958,
+                  "x": 262,
+                  "y": 0
+                },
+                {
+                  "h": 1092,
+                  "w": 546,
+                  "x": 674,
+                  "y": 0
+                },
+                {
+                  "h": 1092,
+                  "w": 1220,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 1092,
+              "width": 1220
+            },
+            "sizes": {
+              "large": {
+                "h": 1092,
+                "resize": "fit",
+                "w": 1220
+              },
+              "medium": {
+                "h": 1074,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 609,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/Y5Wgb3ZBaX"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          68
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025461138067259864": {
+      "tweet_created_at": "2026-02-22T06:42:21.000000Z",
+      "id": 2025461138067259864,
+      "id_str": "2025461138067259864",
+      "type": "tweet",
+      "conversation_id_str": "2025461138067259864",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "Forget the India vs. Pakistan hype\u2014if you want elite cricket, India vs. South Africa is the real main event. The stats prove it\u2019s the ultimate clash of titans:\n\n- Since 2024, India is a perfect 12-0, while South Africa has only lost once in 13 matches.\n\n- That single South African loss? It was against India in the 2024 final.\n\n- While Ind vs. Pak often feels one-sided and flat, this rivalry delivers two structured, consistent sides operating at the highest level of the game. \n\n- It\u2019s not just a match; it\u2019s the only true test of quality in the T20 World Cup.",
+      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 1732745916095025152,
+        "id_str": "1732745916095025152",
+        "name": "Cricket Central",
+        "screen_name": "CricketCentrl",
+        "location": "",
+        "url": null,
+        "description": "India Team | Cricket Lover | IPL | Cricket Update |",
+        "protected": false,
+        "verified": true,
+        "followers_count": 4437,
+        "friends_count": 705,
+        "listed_count": 4,
+        "favourites_count": 857,
+        "statuses_count": 4309,
+        "created_at": "2023-12-07T12:56:53.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1732745916095025152/1767132528",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/2007050367327174656/9lh3MRBx_normal.jpg",
+        "can_dm": false,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 0,
+      "reply_count": 3,
+      "retweet_count": 0,
+      "favorite_count": 3,
+      "views_count": 12,
+      "bookmark_count": 0,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "display_url": "pic.x.com/kzQqTeRwyf",
+            "expanded_url": "https://x.com/CricketCentrl/status/2025461138067259864/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 45,
+                    "w": 45,
+                    "x": 193,
+                    "y": 332
+                  },
+                  {
+                    "h": 90,
+                    "w": 90,
+                    "x": 190,
+                    "y": 84
+                  },
+                  {
+                    "h": 97,
+                    "w": 97,
+                    "x": 645,
+                    "y": 133
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 45,
+                    "w": 45,
+                    "x": 193,
+                    "y": 332
+                  },
+                  {
+                    "h": 90,
+                    "w": 90,
+                    "x": 190,
+                    "y": 84
+                  },
+                  {
+                    "h": 97,
+                    "w": 97,
+                    "x": 645,
+                    "y": 133
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 45,
+                    "w": 45,
+                    "x": 193,
+                    "y": 332
+                  },
+                  {
+                    "h": 90,
+                    "w": 90,
+                    "x": 190,
+                    "y": 84
+                  },
+                  {
+                    "h": 97,
+                    "w": 97,
+                    "x": 645,
+                    "y": 133
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 31,
+                    "w": 31,
+                    "x": 136,
+                    "y": 235
+                  },
+                  {
+                    "h": 63,
+                    "w": 63,
+                    "x": 134,
+                    "y": 59
+                  },
+                  {
+                    "h": 68,
+                    "w": 68,
+                    "x": 457,
+                    "y": 94
+                  }
+                ]
+              }
+            },
+            "id_str": "2025461124280582146",
+            "indices": [
+              274,
+              297
+            ],
+            "media_key": "3_2025461124280582146",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025461124280582146"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBviKUMbgAIaHj7.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 537,
+                  "w": 959,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 540,
+                  "w": 540,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 540,
+                  "w": 474,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 540,
+                  "w": 270,
+                  "x": 80,
+                  "y": 0
+                },
+                {
+                  "h": 540,
+                  "w": 959,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 540,
+              "width": 959
+            },
+            "sizes": {
+              "large": {
+                "h": 540,
+                "resize": "fit",
+                "w": 959
+              },
+              "medium": {
+                "h": 540,
+                "resize": "fit",
+                "w": 959
+              },
+              "small": {
+                "h": 383,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/kzQqTeRwyf"
+          },
+          {
+            "display_url": "pic.x.com/kzQqTeRwyf",
+            "expanded_url": "https://x.com/CricketCentrl/status/2025461138067259864/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 45,
+                    "w": 45,
+                    "x": 193,
+                    "y": 332
+                  },
+                  {
+                    "h": 90,
+                    "w": 90,
+                    "x": 190,
+                    "y": 84
+                  },
+                  {
+                    "h": 97,
+                    "w": 97,
+                    "x": 645,
+                    "y": 133
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 45,
+                    "w": 45,
+                    "x": 193,
+                    "y": 332
+                  },
+                  {
+                    "h": 90,
+                    "w": 90,
+                    "x": 190,
+                    "y": 84
+                  },
+                  {
+                    "h": 97,
+                    "w": 97,
+                    "x": 645,
+                    "y": 133
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 45,
+                    "w": 45,
+                    "x": 193,
+                    "y": 332
+                  },
+                  {
+                    "h": 90,
+                    "w": 90,
+                    "x": 190,
+                    "y": 84
+                  },
+                  {
+                    "h": 97,
+                    "w": 97,
+                    "x": 645,
+                    "y": 133
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 31,
+                    "w": 31,
+                    "x": 136,
+                    "y": 235
+                  },
+                  {
+                    "h": 63,
+                    "w": 63,
+                    "x": 134,
+                    "y": 59
+                  },
+                  {
+                    "h": 68,
+                    "w": 68,
+                    "x": 457,
+                    "y": 94
+                  }
+                ]
+              }
+            },
+            "id_str": "2025461124280582146",
+            "indices": [
+              274,
+              297
+            ],
+            "media_key": "3_2025461124280582146",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025461124280582146"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBviKUMbgAIaHj7.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 537,
+                  "w": 959,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 540,
+                  "w": 540,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 540,
+                  "w": 474,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 540,
+                  "w": 270,
+                  "x": 80,
+                  "y": 0
+                },
+                {
+                  "h": 540,
+                  "w": 959,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 540,
+              "width": 959
+            },
+            "sizes": {
+              "large": {
+                "h": 540,
+                "resize": "fit",
+                "w": 959
+              },
+              "medium": {
+                "h": 540,
+                "resize": "fit",
+                "w": 959
+              },
+              "small": {
+                "h": 383,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/kzQqTeRwyf"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          273
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025461057771511959": {
+      "tweet_created_at": "2026-02-22T06:42:02.000000Z",
+      "id": 2025461057771511959,
+      "id_str": "2025461057771511959",
+      "type": "reply",
+      "conversation_id_str": "2025452447293210787",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "@Thala_Dhoni007 @PravsRo45 Your idol got owned by a Pakistani in finals of CT \ud83e\udd23",
+      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+      "truncated": false,
+      "in_reply_to_status_id": 2025460818490565113,
+      "in_reply_to_status_id_str": "2025460818490565113",
+      "in_reply_to_user_id": 2025103341555253258,
+      "in_reply_to_user_id_str": "2025103341555253258",
+      "in_reply_to_screen_name": "Thala_Dhoni007",
+      "user": {
+        "id": 1271452542665240576,
+        "id_str": "1271452542665240576",
+        "name": "Ctrl C Ctrl Memes",
+        "screen_name": "Ctrlmemes_",
+        "location": "Heart of Rohit Sharma",
+        "url": "https://www.facebook.com/CtrlMemes",
+        "description": "Backup AC @ctrlmeme,\n\u2764\ufe0ffor all @ImRo45 @klrahul fans |\nFollow us @\nIG: https://t.co/oAwO7zHOJR | FB:  https://t.co/elXQzY7NRP\nDM for collaborat",
+        "protected": false,
+        "verified": true,
+        "followers_count": 15991,
+        "friends_count": 1203,
+        "listed_count": 24,
+        "favourites_count": 47358,
+        "statuses_count": 60492,
+        "created_at": "2020-06-12T14:41:33.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1271452542665240576/1762753786",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1664162177408794625/O1TZ6JeQ_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 0,
+      "reply_count": 1,
+      "retweet_count": 0,
+      "favorite_count": 0,
+      "views_count": 7,
+      "bookmark_count": 0,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [
+          {
+            "id_str": "2025103341555253258",
+            "indices": [
+              0,
+              15
+            ],
+            "name": "`",
+            "screen_name": "Thala_Dhoni007"
+          },
+          {
+            "id_str": "1777428876349841412",
+            "indices": [
+              16,
+              26
+            ],
+            "name": "Supremo\u2074\u2075",
+            "screen_name": "PravsRo45"
+          }
+        ],
+        "display_text_range": [
+          27,
+          79
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025459683876602221": {
+      "tweet_created_at": "2026-02-22T06:36:34.000000Z",
+      "id": 2025459683876602221,
+      "id_str": "2025459683876602221",
+      "type": "tweet",
+      "conversation_id_str": "2025459683876602221",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "#OnThisDay in 1992\n\n\ud835\udde6\ud835\uddee\ud835\uddf0\ud835\uddf5\ud835\uddf6\ud835\uddfb \ud835\udde7\ud835\uddf2\ud835\uddfb\ud835\uddf1\ud835\ude02\ud835\uddf9\ud835\uddf8\ud835\uddee\ud835\uddff made his Worldcup Debut at the age of (18yr 304d)\ud83d\udca5\n\nSachin In Worldcup\n\n- Most Runs (2278)\n- 2nd Most 100s (6)\n- Most 50s (15)\n- Most 4s (241)\n- Most P.O.M (9)\n- Most Top Scores (18)\n- Most Top Scores for India in WC Series (6 in 2003)\n- 2nd Most Runs in a series (673)\n- 2nd Most 50+ scores in a series (7)\n- Youngest to play for India in WC\n- Youngest to Pick Wicket for India in WC\n- Youngest to Win P.O.M Award \n- Most 50+ Scores for India in WC Knockouts (4)\n- 1st to Score 500 Runs in a Series (1996)\n- 1st to Score 600 Runs in a Series (2003)\n- Top RunScorer In 1996 & 2003WC\n- Only player to Win Multiple P.O.M Awards Before 20 Age\n- Only Indian to Score 50 runs & Pick atleast 1 wicket in a WC match for (5 times)\n- Only player to Score 50 runs & Pick atleast 2 wickets in a WC Knockout match for (2 times)\n- 1st Indian to Score Half Century in Powerplay \n- Only Indian to Win 3 P.O.M Awards against an Opponent in Worldcup (vs Pak)",
+      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 4713197502,
+        "id_str": "4713197502",
+        "name": "\ud835\udc7a\ud835\udc89\ud835\udc86\ud835\udc83\ud835\udc82\ud835\udc94",
+        "screen_name": "Shebas_10dulkar",
+        "location": "",
+        "url": "http://instagram.com/shebas_10dulkar",
+        "description": "Cricket Lover \ud83c\udfcf || Engineer || Sachin Tendulkar \ud83d\ude4f || Team India \ud83c\uddee\ud83c\uddf3 || Mumbai Indians || Thalapathy Vijay || Backup Account @Shebas_10",
+        "protected": false,
+        "verified": true,
+        "followers_count": 75328,
+        "friends_count": 552,
+        "listed_count": 159,
+        "favourites_count": 99552,
+        "statuses_count": 74064,
+        "created_at": "2016-01-05T11:13:47.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/4713197502/1451993093",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1385298061992206336/P1whYb-M_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 0,
+      "reply_count": 8,
+      "retweet_count": 2,
+      "favorite_count": 21,
+      "views_count": 375,
+      "bookmark_count": 1,
+      "lang": "en",
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              0,
+              10
+            ],
+            "text": "OnThisDay"
+          },
+          {
+            "indices": [
+              0,
+              10
+            ],
+            "text": "OnThisDay"
+          }
+        ],
+        "media": [
+          {
+            "display_url": "pic.x.com/1PPsIbdNWX",
+            "expanded_url": "https://x.com/Shebas_10dulkar/status/2025459683876602221/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 72,
+                    "w": 72,
+                    "x": 1890,
+                    "y": 1462
+                  },
+                  {
+                    "h": 82,
+                    "w": 82,
+                    "x": 494,
+                    "y": 1608
+                  },
+                  {
+                    "h": 134,
+                    "w": 134,
+                    "x": 132,
+                    "y": 594
+                  },
+                  {
+                    "h": 156,
+                    "w": 156,
+                    "x": 1734,
+                    "y": 170
+                  },
+                  {
+                    "h": 212,
+                    "w": 212,
+                    "x": 896,
+                    "y": 10
+                  },
+                  {
+                    "h": 236,
+                    "w": 236,
+                    "x": 1144,
+                    "y": 96
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 42,
+                    "w": 42,
+                    "x": 1107,
+                    "y": 856
+                  },
+                  {
+                    "h": 48,
+                    "w": 48,
+                    "x": 289,
+                    "y": 942
+                  },
+                  {
+                    "h": 78,
+                    "w": 78,
+                    "x": 77,
+                    "y": 348
+                  },
+                  {
+                    "h": 91,
+                    "w": 91,
+                    "x": 1016,
+                    "y": 99
+                  },
+                  {
+                    "h": 124,
+                    "w": 124,
+                    "x": 525,
+                    "y": 5
+                  },
+                  {
+                    "h": 138,
+                    "w": 138,
+                    "x": 670,
+                    "y": 56
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 72,
+                    "w": 72,
+                    "x": 1890,
+                    "y": 1462
+                  },
+                  {
+                    "h": 82,
+                    "w": 82,
+                    "x": 494,
+                    "y": 1608
+                  },
+                  {
+                    "h": 134,
+                    "w": 134,
+                    "x": 132,
+                    "y": 594
+                  },
+                  {
+                    "h": 156,
+                    "w": 156,
+                    "x": 1734,
+                    "y": 170
+                  },
+                  {
+                    "h": 212,
+                    "w": 212,
+                    "x": 896,
+                    "y": 10
+                  },
+                  {
+                    "h": 236,
+                    "w": 236,
+                    "x": 1144,
+                    "y": 96
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 23,
+                    "w": 23,
+                    "x": 627,
+                    "y": 485
+                  },
+                  {
+                    "h": 27,
+                    "w": 27,
+                    "x": 164,
+                    "y": 533
+                  },
+                  {
+                    "h": 44,
+                    "w": 44,
+                    "x": 43,
+                    "y": 197
+                  },
+                  {
+                    "h": 51,
+                    "w": 51,
+                    "x": 575,
+                    "y": 56
+                  },
+                  {
+                    "h": 70,
+                    "w": 70,
+                    "x": 297,
+                    "y": 3
+                  },
+                  {
+                    "h": 78,
+                    "w": 78,
+                    "x": 379,
+                    "y": 31
+                  }
+                ]
+              }
+            },
+            "id_str": "2025459667372314624",
+            "indices": [
+              264,
+              287
+            ],
+            "media_key": "3_2025459667372314624",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025459667372314624"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBvg1gybkAAYRUM.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1147,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 1796,
+                  "x": 252,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 1024,
+                  "x": 1024,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 2048,
+              "width": 2048
+            },
+            "sizes": {
+              "large": {
+                "h": 2048,
+                "resize": "fit",
+                "w": 2048
+              },
+              "medium": {
+                "h": 1200,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 680,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/1PPsIbdNWX"
+          },
+          {
+            "display_url": "pic.x.com/1PPsIbdNWX",
+            "expanded_url": "https://x.com/Shebas_10dulkar/status/2025459683876602221/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 72,
+                    "w": 72,
+                    "x": 1890,
+                    "y": 1462
+                  },
+                  {
+                    "h": 82,
+                    "w": 82,
+                    "x": 494,
+                    "y": 1608
+                  },
+                  {
+                    "h": 134,
+                    "w": 134,
+                    "x": 132,
+                    "y": 594
+                  },
+                  {
+                    "h": 156,
+                    "w": 156,
+                    "x": 1734,
+                    "y": 170
+                  },
+                  {
+                    "h": 212,
+                    "w": 212,
+                    "x": 896,
+                    "y": 10
+                  },
+                  {
+                    "h": 236,
+                    "w": 236,
+                    "x": 1144,
+                    "y": 96
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 42,
+                    "w": 42,
+                    "x": 1107,
+                    "y": 856
+                  },
+                  {
+                    "h": 48,
+                    "w": 48,
+                    "x": 289,
+                    "y": 942
+                  },
+                  {
+                    "h": 78,
+                    "w": 78,
+                    "x": 77,
+                    "y": 348
+                  },
+                  {
+                    "h": 91,
+                    "w": 91,
+                    "x": 1016,
+                    "y": 99
+                  },
+                  {
+                    "h": 124,
+                    "w": 124,
+                    "x": 525,
+                    "y": 5
+                  },
+                  {
+                    "h": 138,
+                    "w": 138,
+                    "x": 670,
+                    "y": 56
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 72,
+                    "w": 72,
+                    "x": 1890,
+                    "y": 1462
+                  },
+                  {
+                    "h": 82,
+                    "w": 82,
+                    "x": 494,
+                    "y": 1608
+                  },
+                  {
+                    "h": 134,
+                    "w": 134,
+                    "x": 132,
+                    "y": 594
+                  },
+                  {
+                    "h": 156,
+                    "w": 156,
+                    "x": 1734,
+                    "y": 170
+                  },
+                  {
+                    "h": 212,
+                    "w": 212,
+                    "x": 896,
+                    "y": 10
+                  },
+                  {
+                    "h": 236,
+                    "w": 236,
+                    "x": 1144,
+                    "y": 96
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 23,
+                    "w": 23,
+                    "x": 627,
+                    "y": 485
+                  },
+                  {
+                    "h": 27,
+                    "w": 27,
+                    "x": 164,
+                    "y": 533
+                  },
+                  {
+                    "h": 44,
+                    "w": 44,
+                    "x": 43,
+                    "y": 197
+                  },
+                  {
+                    "h": 51,
+                    "w": 51,
+                    "x": 575,
+                    "y": 56
+                  },
+                  {
+                    "h": 70,
+                    "w": 70,
+                    "x": 297,
+                    "y": 3
+                  },
+                  {
+                    "h": 78,
+                    "w": 78,
+                    "x": 379,
+                    "y": 31
+                  }
+                ]
+              }
+            },
+            "id_str": "2025459667372314624",
+            "indices": [
+              264,
+              287
+            ],
+            "media_key": "3_2025459667372314624",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025459667372314624"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBvg1gybkAAYRUM.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1147,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 1796,
+                  "x": 252,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 1024,
+                  "x": 1024,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 2048,
+              "width": 2048
+            },
+            "sizes": {
+              "large": {
+                "h": 2048,
+                "resize": "fit",
+                "w": 2048
+              },
+              "medium": {
+                "h": 1200,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 680,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/1PPsIbdNWX"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          263
+        ]
+      },
+      "is_pinned": false
     }
   },
-  "total_runs": 3,
+  "total_runs": 4,
   "total_carousels": 0,
   "in_flight": [
-    "2025455147753845074",
-    "2025452729079136284",
-    "2025452447293210787",
-    "2025450667134026057",
-    "2025450418906824730",
-    "2025450372932976935",
-    "2025450358034616367",
-    "2025449940399653140",
-    "2025449335048356081",
-    "2025446610910740889"
+    "2025442741493399724",
+    "2025439997063823612",
+    "2025439425946345613",
+    "2025439023771385914",
+    "2025438965231485400",
+    "2025438787422298148",
+    "2025438373293564078",
+    "2025437862054044039",
+    "2025437428602077618",
+    "2025456831108448338"
   ]
 }
