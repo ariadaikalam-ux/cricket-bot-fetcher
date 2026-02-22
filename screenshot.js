@@ -26,6 +26,10 @@ const { chromium } = require("playwright");
 
 const FINAL_W = 1080;
 const FINAL_H = 1350;
+// ===== YOUR BRAND (edit these) =====
+const MY_NAME = "Cric Thread 🏏";
+const MY_USERNAME = "@cric.thread"; // include @ or not, both ok
+const MY_PHOTO = ""; // can be local path OR https URL
 
 function nowIso() {
   return new Date().toISOString();
