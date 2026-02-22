@@ -16,8 +16,8 @@ const { chromium } = require("playwright");
 const FINAL_W = 1080;
 const FINAL_H = 1350;
 
-// ── Canvas padding (px on each side) — tweak to taste ────────────────
-const CANVAS_PAD = 20;
+// ── Canvas padding (px on each side) ─────────────────────────────────
+const CANVAS_PAD = 30;
 // ─────────────────────────────────────────────────────────────────────
 
 // ────────────────────────────────────────────────
@@ -36,13 +36,8 @@ if (fs.existsSync(MY_PHOTO)) {
 }
 // ────────────────────────────────────────────────
 
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function log(msg) {
-  console.log(`[${nowIso()}] ${msg}`);
-}
+function nowIso() { return new Date().toISOString(); }
+function log(msg) { console.log(`[${nowIso()}] ${msg}`); }
 
 function isProbablyJsonString(s) {
   if (!s) return false;
@@ -51,13 +46,8 @@ function isProbablyJsonString(s) {
 }
 
 function buildTweetUrlFromJson(obj) {
-  const id =
-    obj?.id_str ||
-    (typeof obj?.id === "number" ? String(obj.id) : obj?.id);
-  const screen =
-    obj?.user?.screen_name ||
-    obj?.screen_name ||
-    obj?.username;
+  const id = obj?.id_str || (typeof obj?.id === "number" ? String(obj.id) : obj?.id);
+  const screen = obj?.user?.screen_name || obj?.screen_name || obj?.username;
   if (!id || !screen) return null;
   return `https://x.com/${screen}/status/${id}`;
 }
@@ -77,12 +67,10 @@ async function timeStep(label, fn) {
   log(`▶ START: ${label}`);
   try {
     const out = await fn();
-    const ms = ((Date.now() - t0) / 1000).toFixed(2);
-    log(`✅ END:   ${label} (${ms}s)`);
+    log(`✅ END:   ${label} (${((Date.now() - t0) / 1000).toFixed(2)}s)`);
     return out;
   } catch (e) {
-    const ms = ((Date.now() - t0) / 1000).toFixed(2);
-    log(`❌ FAIL:  ${label} (${ms}s) -> ${e.message}`);
+    log(`❌ FAIL:  ${label} (${((Date.now() - t0) / 1000).toFixed(2)}s) -> ${e.message}`);
     throw e;
   }
 }
@@ -104,32 +92,16 @@ async function preparePage(page) {
   await page.route("**/*", (route) => {
     const url = route.request().url();
     if (url.match(/\.(woff|woff2|ttf|otf)(\?|$)/i)) return route.abort();
-    if (
-      url.includes("doubleclick") ||
-      url.includes("googletagmanager") ||
-      url.includes("google-analytics") ||
-      url.includes("analytics")
-    ) {
-      return route.abort();
-    }
+    if (url.includes("doubleclick") || url.includes("googletagmanager") ||
+        url.includes("google-analytics") || url.includes("analytics")) return route.abort();
     return route.continue();
   });
 
   if (MY_PHOTO_BUFFER) {
     await page.route((url) => {
       const s = url.toString();
-      return (
-        s.includes("profile_images") ||
-        s.includes("profile-images") ||
-        s.includes("pbs.twimg.com/profile")
-      );
-    }, (route) => {
-      route.fulfill({
-        status: 200,
-        contentType: "image/jpeg",
-        body: MY_PHOTO_BUFFER,
-      });
-    });
+      return s.includes("profile_images") || s.includes("profile-images") || s.includes("pbs.twimg.com/profile");
+    }, (route) => route.fulfill({ status: 200, contentType: "image/jpeg", body: MY_PHOTO_BUFFER }));
   }
 }
 
@@ -150,7 +122,7 @@ async function waitForTweetContent(page) {
   const candidates = ['[data-testid="tweet"]', "article", ".main-tweet", ".tweet-body"];
   for (const sel of candidates) {
     try {
-      await page.locator(sel).first().waitFor({ timeout: 15000, state: "visible" });
+      await page.locator(sel).first().waitFor({ timeout: 20000, state: "visible" });
       return;
     } catch (_) {}
   }
@@ -171,79 +143,52 @@ async function dedupMediaOnly(tweetEl, page) {
   await tweetEl.evaluate((root) => {
     const canon = (u) => {
       if (!u) return "";
-      try {
-        const url = new URL(u, location.href);
-        return `${url.host}${url.pathname}`.toLowerCase();
-      } catch {
-        return String(u).split("?")[0].toLowerCase();
-      }
+      try { const url = new URL(u, location.href); return `${url.host}${url.pathname}`.toLowerCase(); }
+      catch { return String(u).split("?")[0].toLowerCase(); }
     };
-    const tiles = Array.from(
-      root.querySelectorAll(
-        '[data-testid="tweetPhoto"], [data-testid="videoPlayer"], div[aria-label="Embedded video"], div[aria-label="Embedded image"]'
-      )
-    );
+    const tiles = Array.from(root.querySelectorAll(
+      '[data-testid="tweetPhoto"], [data-testid="videoPlayer"], div[aria-label="Embedded video"], div[aria-label="Embedded image"]'
+    ));
     if (!tiles.length) return;
     const tileSig = (tile) => {
       const imgs = Array.from(tile.querySelectorAll("img"));
       if (imgs.length) {
-        let best = imgs[0];
-        let bestArea = 0;
-        for (const img of imgs) {
-          const r = img.getBoundingClientRect();
-          const area = r.width * r.height;
-          if (area > bestArea) { bestArea = area; best = img; }
-        }
+        let best = imgs[0], bestArea = 0;
+        for (const img of imgs) { const r = img.getBoundingClientRect(); const a = r.width * r.height; if (a > bestArea) { bestArea = a; best = img; } }
         return canon(best.currentSrc || best.src);
       }
       const vid = tile.querySelector("video");
-      if (vid) return canon(vid.poster || vid.currentSrc || vid.src);
-      return "";
+      return vid ? canon(vid.poster || vid.currentSrc || vid.src) : "";
     };
     for (const tile of tiles) {
-      const imgs = Array.from(tile.querySelectorAll("img"));
-      const seen = new Set();
-      for (const img of imgs) {
-        const sig = canon(img.currentSrc || img.src);
-        if (!sig) continue;
-        if (seen.has(sig)) { img.style.display = "none"; img.style.visibility = "hidden"; }
-        else seen.add(sig);
-      }
+      const imgs = Array.from(tile.querySelectorAll("img")); const seen = new Set();
+      for (const img of imgs) { const sig = canon(img.currentSrc || img.src); if (!sig) continue; if (seen.has(sig)) { img.style.display = "none"; } else seen.add(sig); }
     }
     const seenTile = new Set();
-    for (const tile of tiles) {
-      const sig = tileSig(tile);
-      if (!sig) continue;
-      if (seenTile.has(sig)) { tile.style.display = "none"; tile.style.visibility = "hidden"; }
-      else seenTile.add(sig);
-    }
+    for (const tile of tiles) { const sig = tileSig(tile); if (!sig) continue; if (seenTile.has(sig)) { tile.style.display = "none"; } else seenTile.add(sig); }
   });
   await page.waitForTimeout(200);
 }
 
-// ── Hide metrics — called AFTER full settle, with CSS injection too ───
+// ── The key fix: inject CSS + DOM sweep, called after networkidle ─────
 async function hideMetrics(page) {
-  // Inject CSS first — instant and reliable for anything already rendered
+  // CSS injection — works on everything already painted
   await page.addStyleTag({
     content: `
-      /* Action bar: reply, retweet, like, bookmark, share */
       [data-testid="reply"],
       [data-testid="retweet"],
       [data-testid="like"],
       [data-testid="bookmark"],
       [data-testid="share"],
-      /* Analytics / view count */
       [data-testid="analyticsButton"],
-      a[href$="/analytics"],
-      /* Replies count button */
-      [data-testid="tweet_replies_count_button"] {
+      [data-testid="tweet_replies_count_button"],
+      a[href$="/analytics"] {
         display: none !important;
         visibility: hidden !important;
       }
     `,
   });
 
-  // Then DOM sweep for the group containers and text-based elements
   await page.evaluate(() => {
     const hide = (el) => {
       if (!el) return;
@@ -251,53 +196,44 @@ async function hideMetrics(page) {
       el.style.setProperty("visibility", "hidden", "important");
     };
 
-    // Hide action button groups (the row containing reply/retweet/like)
+    // Hide the entire action group row
     for (const g of document.querySelectorAll('[role="group"]')) {
-      if (g.querySelector('[data-testid="reply"], [data-testid="retweet"], [data-testid="like"]')) {
-        hide(g);
-      }
+      if (g.querySelector('[data-testid="reply"], [data-testid="retweet"], [data-testid="like"]')) hide(g);
     }
 
-    // Walk up from text-matched elements to collapse their block container
-    const walkHide = (el, maxSteps = 5) => {
-      let target = el;
-      for (let i = 0; i < maxSteps; i++) {
-        const p = target.parentElement;
+    // Walk up helper — stops before article/section
+    const walkHide = (el, steps = 5) => {
+      let t = el;
+      for (let i = 0; i < steps; i++) {
+        const p = t.parentElement;
         if (!p) break;
         const tag = p.tagName.toLowerCase();
         if (tag === "article" || tag === "section" || tag === "main") break;
-        target = p;
+        t = p;
       }
-      hide(target);
+      hide(t);
     };
 
-    // "126.6K Views" row — targets the time/views line
-    for (const el of document.querySelectorAll("span, a, div")) {
-      const txt = (el.innerText || el.textContent || "").trim();
-      if (/\d[\d,.]*[KMB]?\s+Views?/i.test(txt) && txt.length < 30) {
-        walkHide(el, 6);
-      }
-    }
-
     // "Read N replies" button
-    for (const el of document.querySelectorAll("a, button, div[role='button'], span")) {
-      const txt = (el.innerText || el.textContent || "").trim();
-      if (/^Read \d+\s+repl/i.test(txt)) {
-        walkHide(el, 5);
-      }
+    for (const el of document.querySelectorAll("a, button, div[role='button']")) {
+      if (/^Read \d+\s+repl/i.test((el.innerText || "").trim())) walkHide(el, 5);
     }
 
-    // Also hide the timestamp + views bar (contains "·" separator pattern)
-    // This targets the "10:53 PM · Feb 22, 2026 · 126.6K Views" line
-    for (const el of document.querySelectorAll("div, span")) {
+    // Timestamp + views row: "10:53 PM · Feb 22, 2026 · 127.4K Views"
+    for (const el of document.querySelectorAll("div, span, a")) {
       const txt = (el.innerText || el.textContent || "").trim();
-      if (/\d{1,2}:\d{2}\s*(AM|PM).*·.*Views?/i.test(txt) && txt.length < 80) {
+      // matches "10:53 PM · Feb 22..." pattern
+      if (/\d{1,2}:\d{2}\s*(AM|PM)/i.test(txt) && txt.includes("·") && txt.length < 100) {
+        walkHide(el, 4);
+      }
+      // matches standalone "127.4K Views"
+      if (/^\d[\d,.]*[KMB]?\s+Views?$/i.test(txt)) {
         walkHide(el, 4);
       }
     }
   });
 
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
 }
 // ─────────────────────────────────────────────────────────────────────
 
@@ -306,101 +242,65 @@ async function customizeAuthor(page) {
     const nameSpans = document.querySelectorAll('[data-testid="User-Name"] span');
     if (nameSpans.length >= 1) nameSpans[0].textContent = name;
     for (const span of nameSpans) {
-      if (span.textContent.trim().startsWith("@")) {
-        span.textContent = username;
-        break;
-      }
+      if (span.textContent.trim().startsWith("@")) { span.textContent = username; break; }
     }
   }, { name: MY_NAME, username: MY_USERNAME });
-
   await page.waitForTimeout(300);
 }
 
 async function replaceProfilePic(page) {
   if (!MY_PHOTO_B64) return;
-
   await page.evaluate((b64) => {
-    const AVATAR_SELECTORS = [
-      '[data-testid="Tweet-User-Avatar"] img',
-      '[data-testid^="UserAvatar-Container"] img',
-      'a[href$="/photo"] img',
-      'a[href*="/photo/"] img',
-    ];
+    const SELECTORS = ['[data-testid="Tweet-User-Avatar"] img', '[data-testid^="UserAvatar-Container"] img', 'a[href$="/photo"] img', 'a[href*="/photo/"] img'];
     const replaced = new Set();
-    for (const sel of AVATAR_SELECTORS) {
+    for (const sel of SELECTORS) {
       for (const img of document.querySelectorAll(sel)) {
         if (replaced.has(img)) continue;
-        img.src = b64;
-        img.srcset = "";
-        replaced.add(img);
+        img.src = b64; img.srcset = ""; replaced.add(img);
       }
     }
   }, MY_PHOTO_B64);
-
   await page.waitForTimeout(200);
 }
 
-// ── Shared canvas HTML builder ────────────────────────────────────────
+// ── Canvas builder ────────────────────────────────────────────────────
 function buildCanvasHtml(rawB64) {
-  return `
-    <!doctype html>
-    <html>
-      <head><meta charset="utf-8"/>
-      <style>
-        html, body { margin:0; padding:0; width:${FINAL_W}px; height:${FINAL_H}px; background:#ffffff; }
-        .canvas {
-          width:${FINAL_W}px; height:${FINAL_H}px;
-          display:flex; align-items:center; justify-content:center;
-          background:#ffffff;
-        }
-        .pad {
-          width:${FINAL_W}px; height:${FINAL_H}px;
-          padding:${CANVAS_PAD}px;
-          box-sizing:border-box;
-          display:flex; align-items:center; justify-content:center;
-        }
-        img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-      </style>
-      </head>
-      <body>
-        <div class="canvas"><div class="pad"><img src="data:image/png;base64,${rawB64}"/></div></div>
-      </body>
-    </html>
-  `;
+  return `<!doctype html><html><head><meta charset="utf-8"/>
+  <style>
+    html,body{margin:0;padding:0;width:${FINAL_W}px;height:${FINAL_H}px;background:#fff;}
+    .canvas{width:${FINAL_W}px;height:${FINAL_H}px;display:flex;align-items:center;justify-content:center;background:#fff;}
+    .pad{width:${FINAL_W}px;height:${FINAL_H}px;padding:${CANVAS_PAD}px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;}
+    img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+  </style></head><body>
+  <div class="canvas"><div class="pad"><img src="data:image/png;base64,${rawB64}"/></div></div>
+  </body></html>`;
 }
-// ─────────────────────────────────────────────────────────────────────
 
-async function renderOne(page, context, tweetObj, outPath) {
-  const tweetUrl = buildTweetUrlFromJson(tweetObj);
-  if (!tweetUrl) return { ok: false, reason: "missing_url_fields" };
-
-  if (tweetHasVideo(tweetObj)) {
-    return { ok: false, reason: "video_tweet_skipped" };
-  }
-
-  const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outPath);
-  const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
-
-  await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
-  await waitForTweetContent(page);
-  await forceWhiteCss(page);
-  await customizeAuthor(page);
-  await replaceProfilePic(page);
-
-  // ── Wait for full render before hiding metrics ────────────────────
-  await page.waitForTimeout(1200);
-  await hideMetrics(page);
-  // Run hideMetrics twice — second pass catches lazy-rendered elements
-  await page.waitForTimeout(400);
-  await hideMetrics(page);
-  await page.waitForTimeout(300);
-  // ─────────────────────────────────────────────────────────────────
-
+// ── Core: screenshot a page, crop tightly to visible tweet content ────
+async function captureTweetTight(page, context, pngOut) {
   const tweetEl = await pickTweetElement(page);
   await dedupMediaOnly(tweetEl, page);
 
-  await tweetEl.screenshot({ path: rawPath, type: "png" });
-  if (!fs.existsSync(rawPath)) return { ok: false, reason: "raw_missing" };
+  // Get bounding box of the tweet element
+  const box = await tweetEl.boundingBox();
+  if (!box) throw new Error("Could not get tweet bounding box");
+
+  // Take full-page screenshot then crop, OR use clip directly
+  const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
+
+  // Clip screenshot to exact tweet bounds (no extra whitespace)
+  await page.screenshot({
+    path: rawPath,
+    type: "png",
+    clip: {
+      x: Math.max(0, box.x),
+      y: Math.max(0, box.y),
+      width: Math.min(box.width, 1800),
+      height: Math.min(box.height, 4000),
+    },
+  });
+
+  if (!fs.existsSync(rawPath)) throw new Error("Raw screenshot did not write");
 
   const rawBuf = fs.readFileSync(rawPath);
   const rawB64 = rawBuf.toString("base64");
@@ -413,10 +313,42 @@ async function renderOne(page, context, tweetObj, outPath) {
   await page2.close();
 
   try { fs.unlinkSync(rawPath); } catch (_) {}
-  if (alsoWriteJpg && jpgOut) {
-    try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {}
-  }
+}
+// ─────────────────────────────────────────────────────────────────────
 
+async function setupPage(context) {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 600, height: 900 });
+  await preparePage(page);
+  return page;
+}
+
+async function loadAndProcess(page, tweetUrl) {
+  // ── KEY FIX: wait for networkidle so React has fully hydrated ───
+  await page.goto(tweetUrl, { waitUntil: "networkidle", timeout: 60000 });
+  await waitForTweetContent(page);
+  await forceWhiteCss(page);
+  await customizeAuthor(page);
+  await replaceProfilePic(page);
+  // Metrics are now fully rendered — hide them
+  await hideMetrics(page);
+  // One more pass after a short wait (catches any late-rendered elements)
+  await page.waitForTimeout(500);
+  await hideMetrics(page);
+  await page.waitForTimeout(200);
+}
+
+async function renderOne(page, context, tweetObj, outPath) {
+  const tweetUrl = buildTweetUrlFromJson(tweetObj);
+  if (!tweetUrl) return { ok: false, reason: "missing_url_fields" };
+  if (tweetHasVideo(tweetObj)) return { ok: false, reason: "video_tweet_skipped" };
+
+  const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outPath);
+
+  await loadAndProcess(page, tweetUrl);
+  await captureTweetTight(page, context, pngOut);
+
+  if (alsoWriteJpg && jpgOut) { try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {} }
   return { ok: true, out: outPath, url: tweetUrl };
 }
 
@@ -427,39 +359,18 @@ async function runBatch(batchJson) {
     const items = JSON.parse(batchJson);
     if (!Array.isArray(items)) throw new Error("batch must be a JSON array");
 
-    browser = await chromium.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
-    });
-
-    const context = await browser.newContext({
-      colorScheme: "light",
-      deviceScaleFactor: 3,
-      timezoneId: "Asia/Kolkata",
-      locale: "en-IN",
-    });
-
-    const page = await context.newPage();
-    await page.setViewportSize({ width: 600, height: 900 });
-    await preparePage(page);
+    browser = await chromium.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
+    const context = await browser.newContext({ colorScheme: "light", deviceScaleFactor: 3, timezoneId: "Asia/Kolkata", locale: "en-IN" });
+    const page = await setupPage(context);
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i] || {};
       const out = it.out;
       let tweetObj = it.tweet;
 
-      if (!out) {
-        results.push({ ok: false, i, reason: "missing_out" });
-        continue;
-      }
-
-      if (typeof tweetObj === "string" && isProbablyJsonString(tweetObj)) {
-        try { tweetObj = JSON.parse(tweetObj); } catch (_) {}
-      }
-
-      if (!tweetObj || typeof tweetObj !== "object") {
-        results.push({ ok: false, i, out, reason: "missing_tweet" });
-        continue;
-      }
+      if (!out) { results.push({ ok: false, i, reason: "missing_out" }); continue; }
+      if (typeof tweetObj === "string" && isProbablyJsonString(tweetObj)) { try { tweetObj = JSON.parse(tweetObj); } catch (_) {} }
+      if (!tweetObj || typeof tweetObj !== "object") { results.push({ ok: false, i, out, reason: "missing_tweet" }); continue; }
 
       log(`▶ item ${i + 1}/${items.length}: ${out}`);
       try {
@@ -482,102 +393,30 @@ async function runBatch(batchJson) {
 
 async function runSingle(inputArg, outputPathArg) {
   let tweetUrl = inputArg;
-
   if (isProbablyJsonString(inputArg)) {
     const tweetObj = JSON.parse(inputArg);
     const built = buildTweetUrlFromJson(tweetObj);
-    if (!built) {
-      console.error(`[${nowIso()}] ❌ Could not build tweet URL from JSON`);
-      return 1;
-    }
+    if (!built) { console.error(`[${nowIso()}] ❌ Could not build tweet URL from JSON`); return 1; }
     tweetUrl = built;
   }
 
   let browser;
   try {
-    browser = await chromium.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
-    });
+    browser = await chromium.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
+    const context = await browser.newContext({ colorScheme: "light", deviceScaleFactor: 3, timezoneId: "Asia/Kolkata", locale: "en-IN" });
+    const page = await setupPage(context);
 
-    const context = await browser.newContext({
-      colorScheme: "light",
-      deviceScaleFactor: 3,
-      timezoneId: "Asia/Kolkata",
-      locale: "en-IN",
-    });
-
-    const page = await context.newPage();
-    await page.setViewportSize({ width: 600, height: 900 });
-    await preparePage(page);
-
-    await timeStep(`Goto tweet: ${tweetUrl}`, async () => {
-      await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
-    });
-
-    await timeStep("Wait for tweet content", async () => {
-      await waitForTweetContent(page);
-    });
-
-    await timeStep("Force white background + hide side UI", async () => {
-      await forceWhiteCss(page);
-    });
-
-    await timeStep("Customize author (name / @)", async () => {
-      await customizeAuthor(page);
-    });
-
-    await timeStep("Replace profile pic via DOM", async () => {
-      await replaceProfilePic(page);
-    });
-
-    await timeStep("Wait for full render before hiding metrics", async () => {
-      await page.waitForTimeout(1200);
-    });
-
-    await timeStep("Hide metrics + replies (pass 1)", async () => {
-      await hideMetrics(page);
-    });
-
-    await timeStep("Hide metrics + replies (pass 2 — catches lazy elements)", async () => {
-      await page.waitForTimeout(400);
-      await hideMetrics(page);
-    });
-
-    await timeStep("Final settle", async () => {
-      await page.waitForTimeout(300);
-    });
-
-    const tweetEl = await timeStep("Pick best tweet element", async () => {
-      return await pickTweetElement(page);
-    });
-
-    await timeStep("DEDUP: hide only duplicate media", async () => {
-      await dedupMediaOnly(tweetEl, page);
+    await timeStep(`Goto + networkidle: ${tweetUrl}`, async () => {
+      await loadAndProcess(page, tweetUrl);
     });
 
     const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outputPathArg);
-    const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
-    await timeStep("Capture RAW tweet element", async () => {
-      await tweetEl.screenshot({ path: rawPath, type: "png" });
-      if (!fs.existsSync(rawPath)) throw new Error("Raw screenshot did not write");
+    await timeStep("Capture tight crop + compose 4:5 canvas", async () => {
+      await captureTweetTight(page, context, pngOut);
     });
 
-    await timeStep("Compose IG 4:5 (1080x1350) white canvas", async () => {
-      const rawBuf = fs.readFileSync(rawPath);
-      const rawB64 = rawBuf.toString("base64");
-      const page2 = await context.newPage();
-      await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
-      await page2.setContent(buildCanvasHtml(rawB64), { waitUntil: "load" });
-      await page2.waitForTimeout(80);
-      await page2.screenshot({ path: pngOut, type: "png" });
-      await page2.close();
-    });
-
-    try { fs.unlinkSync(rawPath); } catch (_) {}
-    if (alsoWriteJpg && jpgOut) {
-      try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {}
-    }
+    if (alsoWriteJpg && jpgOut) { try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {} }
 
     console.log(`[${nowIso()}] ✅ saved ${outputPathArg}`);
     return 0;
@@ -592,16 +431,6 @@ async function runSingle(inputArg, outputPathArg) {
 // ── Entry point ───────────────────────────────────────────────────────
 (async () => {
   const args = process.argv.slice(2);
-
-  if (args[0] === "--batch") {
-    const batchJson = args[1];
-    const code = await runBatch(batchJson);
-    process.exit(code);
-  }
-
-  // single mode
-  const inputArg = args[0];
-  const outArg = args[1];
-  const code = await runSingle(inputArg, outArg);
-  process.exit(code);
+  if (args[0] === "--batch") { process.exit(await runBatch(args[1])); }
+  process.exit(await runSingle(args[0], args[1]));
 })();
