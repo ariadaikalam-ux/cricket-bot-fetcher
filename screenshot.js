@@ -125,24 +125,40 @@ async function forceWhiteCss(page) {
         line-height: 1.5 !important;
       }
 
-      /* ── BRANDING: bigger name + handle ── */
-      [data-testid="User-Name"] {
-        font-size: 2.0em !important;    /* was 1.70em — bumped up */
-      }
-
-      /* ── BRANDING: bigger avatar ── */
+      /* ── BRANDING: bigger avatar (container & img must match) ── */
       [data-testid="Tweet-User-Avatar"],
       [data-testid^="UserAvatar-Container"] {
-        width: 64px !important;         /* Twitter default is ~40px */
+        width: 64px !important;
         height: 64px !important;
         min-width: 64px !important;
         min-height: 64px !important;
+        flex-shrink: 0 !important;      /* ← stops it squishing into name */
       }
       [data-testid="Tweet-User-Avatar"] img,
       [data-testid^="UserAvatar-Container"] img {
-        width: 64px !important;
+        width: 64px !important;         /* ← match container, was wrongly 88px */
         height: 64px !important;
         border-radius: 50% !important;
+      }
+
+      /* ── BRANDING: name size + position ── */
+      [data-testid="User-Name"] {
+        font-size: 1em !important;      /* reset the broken 4.2em */
+        margin-left: 16px !important;    /* push name away from avatar */
+      }
+      /* Target the actual display name text directly in px */
+      [data-testid="User-Name"] a span,
+      [data-testid="User-Name"] div > span {
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+      }
+      [data-testid="caret"] {
+        display: none !important;
+      }
+      /* Gap between author header and tweet body */
+      [data-testid="tweetText"] {
+        margin-top: 14px !important;   /* add this line, keep your existing font-size/line-height */
       }
     `,
   });
