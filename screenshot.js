@@ -1,23 +1,12 @@
 /**
  * screenshot.js — Batch Playwright tweet screenshotter (IG-ready 4:5)
+ * Customized: replaces original author name / @ / avatar with your branding
  *
- * Single mode (compatible):
+ * Single mode:
  *   node screenshot.js <tweet_url_or_json> <output_path>
  *
- * Batch mode (NEW):
+ * Batch mode:
  *   node screenshot.js --batch '<json_array>'
- *
- * Where json_array = [
- *   { "tweet": <tweet_json_object_or_json_string>, "out": "/abs/path/123.jpg" },
- *   ...
- * ]
- *
- * Output
- * - Always 1080x1350 (4:5)
- * - White background
- * - Tweet card centered and scaled
- * - DEDUP ONLY: hide duplicate media, keep real multi-media
- * - SKIP videos (video/animated_gif) when tweet JSON includes media info
  */
 
 const fs = require("fs");
@@ -26,6 +15,20 @@ const { chromium } = require("playwright");
 
 const FINAL_W = 1080;
 const FINAL_H = 1350;
+
+// ────────────────────────────────────────────────
+//          YOUR BRANDING (will replace original)
+const MY_NAME = "Cric Thread 🏏";
+const MY_USERNAME = "@cric.thread";
+const MY_PHOTO = path.resolve("IMG_6905.JPG"); // must exist in same folder or provide full path
+
+let MY_PHOTO_BASE64 = "";
+if (fs.existsSync(MY_PHOTO)) {
+  MY_PHOTO_BASE64 = fs.readFileSync(MY_PHOTO).toString("base64");
+} else {
+  console.warn(`[WARNING] Profile photo not found: ${MY_PHOTO}`);
+}
+// ────────────────────────────────────────────────
 
 function nowIso() {
   return new Date().toISOString();
@@ -45,12 +48,10 @@ function buildTweetUrlFromJson(obj) {
   const id =
     obj?.id_str ||
     (typeof obj?.id === "number" ? String(obj.id) : obj?.id);
-
   const screen =
     obj?.user?.screen_name ||
     obj?.screen_name ||
     obj?.username;
-
   if (!id || !screen) return null;
   return `https://x.com/${screen}/status/${id}`;
 }
@@ -81,7 +82,6 @@ async function timeStep(label, fn) {
 }
 
 function tweetHasVideo(tweetObj) {
-  // Checks entities.media / extended_entities.media
   const ext = tweetObj?.extended_entities?.media;
   const ent = tweetObj?.entities?.media;
   const media = Array.isArray(ext) ? ext : Array.isArray(ent) ? ent : [];
@@ -95,7 +95,6 @@ function tweetHasVideo(tweetObj) {
 }
 
 async function preparePage(page) {
-  // Speed up: block fonts + common analytics
   await page.route("**/*", (route) => {
     const url = route.request().url();
     if (url.match(/\.(woff|woff2|ttf|otf)(\?|$)/i)) return route.abort();
@@ -116,42 +115,14 @@ async function forceWhiteCss(page) {
     content: `
       :root, html, body { background: #ffffff !important; }
       body { overflow: hidden !important; }
-
       header, nav, aside, [role="banner"], [role="navigation"] { display: none !important; }
       [data-testid="sidebarColumn"] { display: none !important; }
-
       [role="dialog"] { background: transparent !important; }
       [data-testid="tweet"] { background: #ffffff !important; }
     `,
   });
 }
-async function injectIdentity(page) {
-  await page.evaluate(({ name, username, photoBase64 }) => {
-    // 1. Target the Name and Username
-    // X/Twitter uses specific data-testids for these
-    const nameEl = document.querySelector('[data-testid="User-Name"]');
-    if (nameEl) {
-      // The first span is usually the Display Name
-      const spans = nameEl.querySelectorAll('span');
-      if (spans.length > 0) spans[0].innerText = name;
-      
-      // The second part is usually the @handle
-      if (spans.length > 1) spans[1].innerText = username;
-    }
 
-    // 2. Target the Profile Photo
-    // Look for the avatar image specifically
-    const avatar = document.querySelector('[data-testid="Tweet-User-Avatar"] img');
-    if (avatar) {
-      avatar.src = `data:image/jpeg;base64,${photoBase64}`;
-      avatar.srcset = `data:image/jpeg;base64,${photoBase64}`;
-    }
-  }, {
-    name: "Cric Thread 🏏",
-    username: "@cric.thread",
-    photoBase64: fs.readFileSync(path.resolve("IMG_6905.JPG")).toString('base64')
-  });
-}
 async function waitForTweetContent(page) {
   const candidates = ['[data-testid="tweet"]', "article", ".main-tweet", ".tweet-body"];
   for (const sel of candidates) {
@@ -166,13 +137,10 @@ async function waitForTweetContent(page) {
 async function pickTweetElement(page) {
   const locTweet = page.locator('[data-testid="tweet"]').first();
   if (await locTweet.count()) return locTweet;
-
   const locArticle = page.locator("article").first();
   if (await locArticle.count()) return locArticle;
-
   const locMain = page.locator(".main-tweet").first();
   if (await locMain.count()) return locMain;
-
   return page.locator("body").first();
 }
 
@@ -187,14 +155,12 @@ async function dedupMediaOnly(tweetEl, page) {
         return String(u).split("?")[0].toLowerCase();
       }
     };
-
     const tiles = Array.from(
       root.querySelectorAll(
         '[data-testid="tweetPhoto"], [data-testid="videoPlayer"], div[aria-label="Embedded video"], div[aria-label="Embedded image"]'
       )
     );
     if (!tiles.length) return;
-
     const tileSig = (tile) => {
       const imgs = Array.from(tile.querySelectorAll("img"));
       if (imgs.length) {
@@ -214,8 +180,6 @@ async function dedupMediaOnly(tweetEl, page) {
       if (vid) return canon(vid.poster || vid.currentSrc || vid.src);
       return "";
     };
-
-    // within tile: hide duplicate imgs
     for (const tile of tiles) {
       const imgs = Array.from(tile.querySelectorAll("img"));
       const seen = new Set();
@@ -230,8 +194,6 @@ async function dedupMediaOnly(tweetEl, page) {
         }
       }
     }
-
-    // across tiles: hide tiles with same sig
     const seenTile = new Set();
     for (const tile of tiles) {
       const sig = tileSig(tile);
@@ -244,16 +206,56 @@ async function dedupMediaOnly(tweetEl, page) {
       }
     }
   });
-
   await page.waitForTimeout(200);
 }
 
+async function customizeAuthor(page) {
+  if (!MY_PHOTO_BASE64) {
+    log("Skipping author customization — photo not loaded");
+    return;
+  }
+
+  await page.evaluate(({ name, username, photoBase64 }) => {
+    // Avatar
+    const avatar = document.querySelector('[data-testid^="UserAvatar-Container-"] img');
+    if (avatar) {
+      avatar.src = `data:image/jpeg;base64,${photoBase64}`;
+      avatar.srcset = "";
+      avatar.style.objectFit = "cover";
+    }
+
+    // Display name (usually first strong/bold span in user-name block)
+    const nameSpans = document.querySelectorAll('[data-testid="User-Name"] span');
+    if (nameSpans.length >= 1) {
+      const target = nameSpans[0];
+      if (target) target.textContent = name;
+    }
+
+    // Username (@handle) — usually second span or one containing @
+    for (const span of nameSpans) {
+      if (span.textContent.trim().startsWith("@")) {
+        span.textContent = username;
+        break;
+      }
+    }
+
+    // Optional: remove blue checkmark if you don't want it (uncomment if needed)
+    // const check = document.querySelector('[data-testid="User-Name"] svg[aria-label*="Verified"]');
+    // if (check) check.remove();
+  }, {
+    name: MY_NAME,
+    username: MY_USERNAME,
+    photoBase64: MY_PHOTO_BASE64
+  });
+
+  // Small delay to let DOM updates settle
+  await page.waitForTimeout(300);
+}
+
 async function renderOne(page, context, tweetObj, outPath) {
-  // Resolve URL
   const tweetUrl = buildTweetUrlFromJson(tweetObj);
   if (!tweetUrl) return { ok: false, reason: "missing_url_fields" };
 
-  // Skip video
   if (tweetHasVideo(tweetObj)) {
     return { ok: false, reason: "video_tweet_skipped" };
   }
@@ -261,26 +263,22 @@ async function renderOne(page, context, tweetObj, outPath) {
   const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outPath);
   const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
-  // goto
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
-
-  // wait content + CSS
   await waitForTweetContent(page);
   await forceWhiteCss(page);
 
-  // smaller settle (saves time)
+  // ── Apply your branding replacement ───────────────────────────────
+  await customizeAuthor(page);
+  // ──────────────────────────────────────────────────────────────────
+
   await page.waitForTimeout(600);
 
   const tweetEl = await pickTweetElement(page);
-
-  // dedupe duplicates only
   await dedupMediaOnly(tweetEl, page);
 
-  // raw
   await tweetEl.screenshot({ path: rawPath, type: "png" });
   if (!fs.existsSync(rawPath)) return { ok: false, reason: "raw_missing" };
 
-  // compose 4:5 in a second page
   const rawBuf = fs.readFileSync(rawPath);
   const rawB64 = rawBuf.toString("base64");
 
@@ -290,47 +288,16 @@ async function renderOne(page, context, tweetObj, outPath) {
   const html = `
     <!doctype html>
     <html>
-      <head>
-        <meta charset="utf-8"/>
-        <style>
-          html, body {
-            margin: 0;
-            padding: 0;
-            width: ${FINAL_W}px;
-            height: ${FINAL_H}px;
-            background: #ffffff;
-          }
-          .canvas {
-            width: ${FINAL_W}px;
-            height: ${FINAL_H}px;
-            background: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .pad {
-            width: ${FINAL_W}px;
-            height: ${FINAL_H}px;
-            padding: 64px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            display: block;
-          }
-        </style>
+      <head><meta charset="utf-8"/>
+      <style>
+        html, body { margin:0; padding:0; width:${FINAL_W}px; height:${FINAL_H}px; background:#ffffff; }
+        .canvas { width:${FINAL_W}px; height:${FINAL_H}px; display:flex; align-items:center; justify-content:center; background:#ffffff; }
+        .pad { width:${FINAL_W}px; height:${FINAL_H}px; padding:64px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; }
+        img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+      </style>
       </head>
       <body>
-        <div class="canvas">
-          <div class="pad">
-            <img src="data:image/png;base64,${rawB64}" />
-          </div>
-        </div>
+        <div class="canvas"><div class="pad"><img src="data:image/png;base64,${rawB64}"/></div></div>
       </body>
     </html>
   `;
@@ -341,7 +308,6 @@ async function renderOne(page, context, tweetObj, outPath) {
   await page2.close();
 
   try { fs.unlinkSync(rawPath); } catch (_) {}
-
   if (alsoWriteJpg && jpgOut) {
     try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {}
   }
@@ -352,26 +318,20 @@ async function renderOne(page, context, tweetObj, outPath) {
 async function runBatch(batchJson) {
   let browser;
   const results = [];
-
   try {
     const items = JSON.parse(batchJson);
     if (!Array.isArray(items)) throw new Error("batch must be a JSON array");
 
     browser = await chromium.launch({
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
     });
 
     const context = await browser.newContext({
-  colorScheme: "light",
-  deviceScaleFactor: 2,
-  timezoneId: "Asia/Kolkata",
-  locale: "en-IN",
-});
+      colorScheme: "light",
+      deviceScaleFactor: 2,
+      timezoneId: "Asia/Kolkata",
+      locale: "en-IN",
+    });
 
     const page = await context.newPage();
     await page.setViewportSize({ width: 1400, height: 2000 });
@@ -387,10 +347,10 @@ async function runBatch(batchJson) {
         continue;
       }
 
-      // tweet can be object or stringified json
       if (typeof tweetObj === "string" && isProbablyJsonString(tweetObj)) {
         try { tweetObj = JSON.parse(tweetObj); } catch (_) {}
       }
+
       if (!tweetObj || typeof tweetObj !== "object") {
         results.push({ ok: false, i, out, reason: "missing_tweet" });
         continue;
@@ -405,9 +365,7 @@ async function runBatch(batchJson) {
       }
     }
 
-    // Print one machine-readable line for Python
     console.log("__BATCH_RESULT__" + JSON.stringify({ results }));
-
     return 0;
   } catch (e) {
     console.error(`[${nowIso()}] ❌ batch failed: ${e.message}`);
@@ -418,7 +376,6 @@ async function runBatch(batchJson) {
 }
 
 async function runSingle(inputArg, outputPathArg) {
-  // Backwards compatibility: same as before (single screenshot)
   let tweetUrl = inputArg;
   let tweetObj = null;
 
@@ -432,25 +389,19 @@ async function runSingle(inputArg, outputPathArg) {
     tweetUrl = built;
   }
 
-  // If single input is URL but you want skip-video, we can't know without JSON.
-  // We'll just run as-is.
   let browser;
   try {
     browser = await chromium.launch({
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
     });
 
     const context = await browser.newContext({
-  colorScheme: "light",
-  deviceScaleFactor: 2,
-  timezoneId: "Asia/Kolkata",
-  locale: "en-IN",
-});
+      colorScheme: "light",
+      deviceScaleFactor: 2,
+      timezoneId: "Asia/Kolkata",
+      locale: "en-IN",
+    });
+
     const page = await context.newPage();
     await page.setViewportSize({ width: 1400, height: 2000 });
     await preparePage(page);
@@ -467,6 +418,12 @@ async function runSingle(inputArg, outputPathArg) {
       await forceWhiteCss(page);
     });
 
+    // ── Apply your branding replacement ───────────────────────────────
+    await timeStep("Customize author (name / @ / photo)", async () => {
+      await customizeAuthor(page);
+    });
+    // ──────────────────────────────────────────────────────────────────
+
     await timeStep("Let images settle", async () => {
       await page.waitForTimeout(600);
     });
@@ -475,7 +432,7 @@ async function runSingle(inputArg, outputPathArg) {
       return await pickTweetElement(page);
     });
 
-    await timeStep("DEDUP: hide only duplicate media (keep real multi-media)", async () => {
+    await timeStep("DEDUP: hide only duplicate media", async () => {
       await dedupMediaOnly(tweetEl, page);
     });
 
@@ -490,10 +447,8 @@ async function runSingle(inputArg, outputPathArg) {
     await timeStep("Compose IG 4:5 (1080x1350) white canvas", async () => {
       const rawBuf = fs.readFileSync(rawPath);
       const rawB64 = rawBuf.toString("base64");
-
       const page2 = await context.newPage();
       await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
-
       const html = `
         <!doctype html><html><head><meta charset="utf-8"/>
         <style>
@@ -505,7 +460,6 @@ async function runSingle(inputArg, outputPathArg) {
         <div class="canvas"><div class="pad"><img src="data:image/png;base64,${rawB64}"/></div></div>
         </body></html>
       `;
-
       await page2.setContent(html, { waitUntil: "load" });
       await page2.waitForTimeout(80);
       await page2.screenshot({ path: pngOut, type: "png" });
@@ -527,7 +481,7 @@ async function runSingle(inputArg, outputPathArg) {
   }
 }
 
-// ---- Entry ----
+// ── Entry point ───────────────────────────────────────────────────────
 (async () => {
   const args = process.argv.slice(2);
 
