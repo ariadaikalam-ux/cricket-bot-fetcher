@@ -275,138 +275,86 @@ async function replaceTweetHeaderWithMine(tweetEl, page, myBrand) {
   if (!myBrand) return;
 
   await tweetEl.evaluate((root, brand) => {
+    // 1. Try to find the header container
+    // We look for the User-Name testid, or a generic header, or the first large group of text
     const userNameBlock = root.querySelector('[data-testid="User-Name"]');
-    if (!userNameBlock) return;
+    const header = userNameBlock?.closest("header") || root.querySelector("header");
 
-    const header = userNameBlock.closest("header") || root.querySelector("header");
-    if (!header) return;
-
-    // 1) Inject strong CSS so X can't "undo" it on rerender
-    if (!document.querySelector("style[data-mybrand-style='1']")) {
-      const st = document.createElement("style");
-      st.setAttribute("data-mybrand-style", "1");
-      st.textContent = `
-        /* Hide original author block (name + handle) */
-        [data-testid="tweet"] [data-testid="User-Name"] { 
-          display: none !important; 
-          visibility: hidden !important;
-        }
-
-        /* Hide common avatar wrappers in tweet header */
-        [data-testid="tweet"] header a[href^="/"] img[alt=""] {
-          display: none !important;
-          visibility: hidden !important;
-        }
-        [data-testid="tweet"] header [data-testid*="UserAvatar"],
-        [data-testid="tweet"] header [data-testid*="user-avatar"],
-        [data-testid="tweet"] header [data-testid*="Tweet-User-Avatar"] {
-          display: none !important;
-          visibility: hidden !important;
-        }
-      `;
-      document.head.appendChild(st);
+    if (!header) {
+      console.log("Could not find header element to replace");
+      return;
     }
 
-    const ensureBrand = () => {
-      // If already present, stop
-      if (header.querySelector("[data-mybrand='1']")) return;
+    // Prevent duplicate injection
+    if (header.querySelector("[data-mybrand='1']")) return;
 
-      // 2) Build our branded header
-      const wrap = document.createElement("div");
-      wrap.setAttribute("data-mybrand", "1");
-      wrap.style.display = "flex";
-      wrap.style.alignItems = "center";
-      wrap.style.gap = "12px";
-      wrap.style.minWidth = "0";
+    // 2. Hide everything currently inside the header (Avatar, Name, Verified Badge)
+    Array.from(header.children).forEach(child => {
+      child.style.display = "none";
+      child.style.visibility = "hidden";
+    });
 
-      const avatar = document.createElement("img");
-      avatar.src = brand.photoDataUrl || "";
-      avatar.alt = "";
-      avatar.style.width = "48px";
-      avatar.style.height = "48px";
-      avatar.style.borderRadius = "999px";
-      avatar.style.objectFit = "cover";
-      avatar.style.flex = "0 0 auto";
-      if (!brand.photoDataUrl) avatar.style.background = "#eee";
+    // 3. Create the New Branded Container
+    const wrap = document.createElement("div");
+    wrap.setAttribute("data-mybrand", "1");
+    wrap.style.cssText = `
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      padding-bottom: 4px !important;
+      width: 100% !important;
+    `;
 
-      const txt = document.createElement("div");
-      txt.style.display = "flex";
-      txt.style.flexDirection = "column";
-      txt.style.minWidth = "0";
+    // 4. Create Avatar
+    const avatar = document.createElement("img");
+    avatar.src = brand.photoDataUrl || "";
+    avatar.style.cssText = `
+      width: 48px !important;
+      height: 48px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      flex-shrink: 0 !important;
+    `;
 
-      // Copy real computed styles (so it matches X)
-      const pickFirstTextSpan = () => {
-        const spans = Array.from(userNameBlock.querySelectorAll("span"));
-        return spans.find(s => (s.textContent || "").trim().length > 0) || null;
-      };
-      const realNameEl = pickFirstTextSpan();
-      const realHandleEl =
-        userNameBlock.querySelector('span[dir="ltr"]') ||
-        Array.from(userNameBlock.querySelectorAll("span")).slice(-1)[0] ||
-        null;
+    // 5. Create Text Stack (Name + Username)
+    const txtStack = document.createElement("div");
+    txtStack.style.cssText = `
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+    `;
 
-      const styleFrom = (el) => {
-        if (!el) return null;
-        const cs = getComputedStyle(el);
-        return {
-          fontFamily: cs.fontFamily,
-          fontSize: cs.fontSize,
-          fontWeight: cs.fontWeight,
-          letterSpacing: cs.letterSpacing,
-          color: cs.color,
-          lineHeight: cs.lineHeight,
-        };
-      };
-      const apply = (el, s) => {
-        if (!s) return;
-        el.style.fontFamily = s.fontFamily;
-        el.style.fontSize = s.fontSize;
-        el.style.fontWeight = s.fontWeight;
-        el.style.letterSpacing = s.letterSpacing;
-        el.style.color = s.color;
-        el.style.lineHeight = s.lineHeight;
-      };
+    const nameEl = document.createElement("div");
+    nameEl.textContent = brand.name;
+    nameEl.style.cssText = `
+      font-weight: 700 !important;
+      font-size: 16px !important;
+      color: #000 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    `;
 
-      const nameStyle = styleFrom(realNameEl);
-      const handleStyle = styleFrom(realHandleEl);
+    const userEl = document.createElement("div");
+    userEl.textContent = brand.username;
+    userEl.style.cssText = `
+      font-weight: 400 !important;
+      font-size: 15px !important;
+      color: #536471 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    `;
 
-      const name = document.createElement("div");
-      name.textContent = brand.name || "";
-      apply(name, nameStyle);
-      name.style.whiteSpace = "nowrap";
-      name.style.overflow = "hidden";
-      name.style.textOverflow = "ellipsis";
+    txtStack.appendChild(nameEl);
+    txtStack.appendChild(userEl);
+    wrap.appendChild(avatar);
+    wrap.appendChild(txtStack);
 
-      const user = document.createElement("div");
-      user.textContent = brand.username || "";
-      apply(user, handleStyle);
-      user.style.whiteSpace = "nowrap";
-      user.style.overflow = "hidden";
-      user.style.textOverflow = "ellipsis";
-
-      txt.appendChild(name);
-      txt.appendChild(user);
-
-      wrap.appendChild(avatar);
-      wrap.appendChild(txt);
-
-      // Put it at the start of header
-      header.insertBefore(wrap, header.firstChild);
-    };
-
-    // 3) Inject once now
-    ensureBrand();
-
-    // 4) Keep it there even if X rerenders
-    if (!header.__myBrandObserver) {
-      const obs = new MutationObserver(() => ensureBrand());
-      obs.observe(header, { childList: true, subtree: true });
-      header.__myBrandObserver = obs;
-    }
+    // 6. Insert at the top of the header
+    header.prepend(wrap);
+    header.style.display = "block"; // Ensure header itself is visible
   }, myBrand);
 
   await page.waitForTimeout(200);
 }
+
 async function renderOne(page, context, tweetObj, outPath, myBrand) {
   const tweetUrl = buildTweetUrlFromJson(tweetObj);
   if (!tweetUrl) return { ok: false, reason: "missing_url_fields" };
