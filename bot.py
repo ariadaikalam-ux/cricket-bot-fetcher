@@ -19,7 +19,7 @@ IMGUR_CLIENT_ID = os.environ.get("IMGUR_CLIENT_ID", "")
 TWITTER_ACCOUNTS = os.environ.get("TWITTER_ACCOUNTS", "mufaddal_vohra,criccrazyjohns,academy_dinda,klfied_,cricketcentrl,tuktuk_academy,ctrlmemes_,shebas_10dulkar,breathekohli")
 ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
-THRESHOLD = int(os.environ.get("TWEET_THRESHOLD", "15"))
+THRESHOLD = int(os.environ.get("TWEET_THRESHOLD", "10"))
 DRY_RUN = os.environ.get("DRY_RUN", "0") == "1"
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 SHOW_STATS = os.environ.get("SHOW_STATS", "0") == "1"
