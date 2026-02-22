@@ -163,9 +163,7 @@ async function dedupMediaOnly(page) {
       try { const url = new URL(u, location.href); return `${url.host}${url.pathname}`.toLowerCase(); }
       catch { return String(u).split("?")[0].toLowerCase(); }
     };
-    const tiles = Array.from(document.querySelectorAll(
-      '[data-testid="tweetPhoto"], [data-testid="videoPlayer"]'
-    ));
+    const tiles = Array.from(document.querySelectorAll('[data-testid="tweetPhoto"], [data-testid="videoPlayer"]'));
     const seenTile = new Set();
     for (const tile of tiles) {
       const img = tile.querySelector("img");
@@ -178,58 +176,106 @@ async function dedupMediaOnly(page) {
   await page.waitForTimeout(200);
 }
 
-// ── THE REAL FIX: find the bottom of meaningful tweet content ─────────
-// Instead of fighting React's DOM, we find the last visible element
-// that is NOT part of the metrics/actions area, and crop to that Y.
-async function findCropBottom(page) {
+// ── CORE FIX: find where metrics START, use that Y as crop bottom ─────
+//
+// Strategy: locate the metrics/timestamp elements by finding them
+// DIRECTLY (top-down), not by walking up from leaves.
+// The timestamp line ("10:53 PM · Feb 22") always appears first.
+// We find its top Y and crop there. If no timestamp found, fall back
+// to the action group (reply/like/retweet row) top Y.
+//
+async function findCropRegion(page) {
   return await page.evaluate(() => {
     const tweet = document.querySelector('[data-testid="tweet"]') || document.querySelector("article");
     if (!tweet) return null;
 
-    const tweetTop = tweet.getBoundingClientRect().top;
-    const tweetLeft = tweet.getBoundingClientRect().left;
-    const tweetWidth = tweet.getBoundingClientRect().width;
+    const tweetRect = tweet.getBoundingClientRect();
 
-    // Elements we want to EXCLUDE from our crop (metrics/actions)
-    const isMetricsNode = (el) => {
-      // Check the element itself and its parents up to tweet root
-      let cur = el;
-      while (cur && cur !== tweet) {
-        const tid = cur.getAttribute?.("data-testid") || "";
-        if (["reply", "retweet", "like", "bookmark", "share", "analyticsButton",
-             "tweet_replies_count_button"].includes(tid)) return true;
-        if (cur.getAttribute?.("role") === "group") {
-          // check if this group contains action buttons
-          if (cur.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"]')) return true;
+    // ── Strategy 1: find the timestamp+views line directly ────────────
+    // Twitter renders this as a <time> element or an <a> linking to the tweet
+    // The line contains "AM" or "PM" and "·" separators
+    let metricsTop = null;
+
+    // Try <time> element first — most reliable
+    const timeEl = tweet.querySelector("time");
+    if (timeEl) {
+      // Walk up to find the row container (the div wrapping the full timestamp line)
+      let row = timeEl;
+      for (let i = 0; i < 6; i++) {
+        const p = row.parentElement;
+        if (!p || p === tweet) break;
+        row = p;
+      }
+      const r = row.getBoundingClientRect();
+      if (r.top > tweetRect.top && r.height > 0) {
+        metricsTop = r.top;
+      }
+    }
+
+    // ── Strategy 2: find action group (reply/like/retweet row) ───────
+    if (metricsTop === null) {
+      for (const g of tweet.querySelectorAll('[role="group"]')) {
+        if (g.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"]')) {
+          const r = g.getBoundingClientRect();
+          if (r.top > tweetRect.top && r.height > 0) {
+            metricsTop = r.top;
+            break;
+          }
         }
-        // "Read N replies" text
-        const txt = (cur.innerText || cur.textContent || "").trim();
-        if (/^Read \d+/.test(txt) && txt.length < 30) return true;
-        // timestamp+views line
-        if (/\d{1,2}:\d{2}\s*(AM|PM)/i.test(txt) && txt.includes("·") && txt.length < 100) return true;
-        cur = cur.parentElement;
       }
-      return false;
-    };
+    }
 
-    // Walk all leaf elements inside the tweet, find lowest Y that is NOT metrics
-    let maxBottom = 0;
-    const walk = (el) => {
-      if (!el || el.nodeType !== 1) return;
-      if (isMetricsNode(el)) return; // skip entire subtree
-      const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) {
-        if (r.bottom > maxBottom) maxBottom = r.bottom;
+    // ── Strategy 3: find by analytics button ─────────────────────────
+    if (metricsTop === null) {
+      const analytics = tweet.querySelector('[data-testid="analyticsButton"], a[href$="/analytics"]');
+      if (analytics) {
+        // Walk up to row container
+        let row = analytics;
+        for (let i = 0; i < 5; i++) {
+          const p = row.parentElement;
+          if (!p || p === tweet) break;
+          row = p;
+        }
+        const r = row.getBoundingClientRect();
+        if (r.top > tweetRect.top) metricsTop = r.top;
       }
-      for (const child of el.children) walk(child);
-    };
-    walk(tweet);
+    }
+
+    // ── Strategy 4: scan all elements for timestamp text pattern ─────
+    if (metricsTop === null) {
+      const allEls = tweet.querySelectorAll("*");
+      for (const el of allEls) {
+        if (el.children.length > 0) continue; // leaf nodes only
+        const txt = (el.innerText || el.textContent || "").trim();
+        // matches "10:53 PM" pattern
+        if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(txt)) {
+          let row = el;
+          for (let i = 0; i < 6; i++) {
+            const p = row.parentElement;
+            if (!p || p === tweet) break;
+            row = p;
+          }
+          const r = row.getBoundingClientRect();
+          if (r.top > tweetRect.top && r.height > 0) {
+            metricsTop = r.top;
+            break;
+          }
+        }
+      }
+    }
+
+    // ── If we found metrics, crop just above them ─────────────────────
+    // Add 8px buffer below last content element (the tweet image bottom)
+    const cropBottom = metricsTop !== null
+      ? metricsTop - 2  // 2px gap — cut right at the start of metrics
+      : tweetRect.bottom; // fallback: use full tweet height
 
     return {
-      x: tweetLeft,
-      y: tweetTop,
-      width: tweetWidth,
-      contentBottom: maxBottom,
+      x: tweetRect.left,
+      y: tweetRect.top,
+      width: tweetRect.width,
+      cropBottom,
+      metricsFound: metricsTop !== null,
     };
   });
 }
@@ -248,18 +294,16 @@ function buildCanvasHtml(rawB64) {
 }
 
 async function captureAndCompose(page, context, pngOut) {
-  // Get the crop region — tweet top to end of last non-metrics element
-  const cropInfo = await findCropBottom(page);
+  const cropInfo = await findCropRegion(page);
   if (!cropInfo) throw new Error("Could not determine crop region");
 
-  const { x, y, width, contentBottom } = cropInfo;
-  const height = Math.max(50, contentBottom - y);
+  const { x, y, width, cropBottom, metricsFound } = cropInfo;
+  const height = Math.max(50, cropBottom - y);
 
-  log(`  Crop region: x=${x.toFixed(0)}, y=${y.toFixed(0)}, w=${width.toFixed(0)}, h=${height.toFixed(0)}`);
+  log(`  Metrics found: ${metricsFound} | Crop: x=${x.toFixed(0)}, y=${y.toFixed(0)}, w=${width.toFixed(0)}, h=${height.toFixed(0)}`);
 
   const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
-  // Screenshot with pixel-perfect clip — cuts off metrics entirely
   await page.screenshot({
     path: rawPath,
     type: "png",
@@ -286,20 +330,15 @@ async function captureAndCompose(page, context, pngOut) {
 }
 
 async function loadTweet(page, tweetUrl) {
-  // domcontentloaded first (fast), then wait for the tweet to appear
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await waitForTweetContent(page);
   await forceWhiteCss(page);
-
-  // Wait for images and JS to settle — this is when metrics appear
-  await page.waitForTimeout(2000);
-
+  // Wait for full JS render including metrics bar
+  await page.waitForTimeout(2500);
   await customizeAuthor(page);
   await replaceProfilePic(page);
   await dedupMediaOnly(page);
-
-  // One more short wait for any final repaints
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(300);
 }
 
 async function renderOne(page, context, tweetObj, outPath) {
@@ -308,10 +347,8 @@ async function renderOne(page, context, tweetObj, outPath) {
   if (tweetHasVideo(tweetObj)) return { ok: false, reason: "video_tweet_skipped" };
 
   const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outPath);
-
   await loadTweet(page, tweetUrl);
   await captureAndCompose(page, context, pngOut);
-
   if (alsoWriteJpg && jpgOut) { try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {} }
   return { ok: true, out: outPath, url: tweetUrl };
 }
@@ -399,7 +436,6 @@ async function runSingle(inputArg, outputPathArg) {
     await timeStep("Load tweet + settle", () => loadTweet(page, tweetUrl));
 
     const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outputPathArg);
-
     await timeStep("Smart crop + compose 4:5 canvas", () => captureAndCompose(page, context, pngOut));
 
     if (alsoWriteJpg && jpgOut) { try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {} }
