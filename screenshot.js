@@ -18,7 +18,6 @@
  * - Tweet card centered and scaled
  * - DEDUP ONLY: hide duplicate media, keep real multi-media
  * - SKIP videos (video/animated_gif) when tweet JSON includes media info
- * - REPLACE author header inside tweet with YOUR brand (name/username/photo)
  */
 
 const fs = require("fs");
@@ -27,11 +26,6 @@ const { chromium } = require("playwright");
 
 const FINAL_W = 1080;
 const FINAL_H = 1350;
-
-// ===== YOUR BRAND (edit these) =====
-const MY_NAME = "Cric Thread 🏏";
-const MY_USERNAME = "@cric.thread"; // include @ or not
-const MY_PHOTO = path.resolve("IMG_6905.JPG"); // local path or https URL
 
 function nowIso() {
   return new Date().toISOString();
@@ -87,6 +81,7 @@ async function timeStep(label, fn) {
 }
 
 function tweetHasVideo(tweetObj) {
+  // Checks entities.media / extended_entities.media
   const ext = tweetObj?.extended_entities?.media;
   const ent = tweetObj?.entities?.media;
   const media = Array.isArray(ext) ? ext : Array.isArray(ent) ? ent : [];
@@ -117,14 +112,12 @@ async function preparePage(page) {
 }
 
 async function forceWhiteCss(page) {
-  // IMPORTANT: Do NOT hide all <header> tags, because tweet header is inside the tweet card.
   await page.addStyleTag({
     content: `
       :root, html, body { background: #ffffff !important; }
       body { overflow: hidden !important; }
 
-      /* Hide X site chrome, keep tweet internals */
-      nav, aside, [role="banner"], [role="navigation"] { display: none !important; }
+      header, nav, aside, [role="banner"], [role="navigation"] { display: none !important; }
       [data-testid="sidebarColumn"] { display: none !important; }
 
       [role="dialog"] { background: transparent !important; }
@@ -229,53 +222,12 @@ async function dedupMediaOnly(tweetEl, page) {
   await page.waitForTimeout(200);
 }
 
-async function toDataUrlFromPhoto(photo) {
-  if (!photo) return null;
-
-  if (typeof photo === "string" && photo.startsWith("data:image/")) return photo;
-
-  // URL (Node 18+ fetch)
-  if (typeof photo === "string" && /^https?:\/\//i.test(photo)) {
-    const res = await fetch(photo);
-    if (!res.ok) throw new Error(`brand photo fetch failed: ${res.status}`);
-    const buf = Buffer.from(await res.arrayBuffer());
-    const ct = res.headers.get("content-type") || "image/jpeg";
-    return `data:${ct};base64,${buf.toString("base64")}`;
-  }
-
-  // local file path
-  const p = String(photo);
-  const buf = fs.readFileSync(p);
-
-  const ext = path.extname(p).toLowerCase();
-  const mime =
-    ext === ".png" ? "image/png" :
-    ext === ".webp" ? "image/webp" :
-    ext === ".gif" ? "image/gif" :
-    "image/jpeg";
-
-  return `data:${mime};base64,${buf.toString("base64")}`;
-}
-
-async function getMyBrand() {
-  const name = String(MY_NAME || "").trim();
-  const userRaw = String(MY_USERNAME || "").trim();
-  const username = userRaw ? (userRaw.startsWith("@") ? userRaw : `@${userRaw}`) : "";
-  const photoDataUrl = await toDataUrlFromPhoto(MY_PHOTO).catch(() => null);
-
-  if (!name && !username && !photoDataUrl) return null;
-  return { name, username, photoDataUrl };
-}
-
-/**
- * Replace the author header INSIDE the tweet card with your brand.
- * Uses stable X testid anchor when available.
- */
-
-async function renderOne(page, context, tweetObj, outPath, myBrand) {
+async function renderOne(page, context, tweetObj, outPath) {
+  // Resolve URL
   const tweetUrl = buildTweetUrlFromJson(tweetObj);
   if (!tweetUrl) return { ok: false, reason: "missing_url_fields" };
 
+  // Skip video
   if (tweetHasVideo(tweetObj)) {
     return { ok: false, reason: "video_tweet_skipped" };
   }
@@ -283,19 +235,22 @@ async function renderOne(page, context, tweetObj, outPath, myBrand) {
   const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outPath);
   const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
+  // goto
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
 
+  // wait content + CSS
   await waitForTweetContent(page);
   await forceWhiteCss(page);
+
+  // smaller settle (saves time)
   await page.waitForTimeout(600);
 
   const tweetEl = await pickTweetElement(page);
 
+  // dedupe duplicates only
   await dedupMediaOnly(tweetEl, page);
 
-  // ✅ Replace author header INSIDE tweet
-  await replaceTweetHeaderWithMine(tweetEl, page, myBrand);
-
+  // raw
   await tweetEl.screenshot({ path: rawPath, type: "png" });
   if (!fs.existsSync(rawPath)) return { ok: false, reason: "raw_missing" };
 
@@ -386,17 +341,15 @@ async function runBatch(batchJson) {
     });
 
     const context = await browser.newContext({
-      colorScheme: "light",
-      deviceScaleFactor: 2,
-      timezoneId: "Asia/Kolkata",
-      locale: "en-IN",
-    });
+  colorScheme: "light",
+  deviceScaleFactor: 2,
+  timezoneId: "Asia/Kolkata",
+  locale: "en-IN",
+});
 
     const page = await context.newPage();
     await page.setViewportSize({ width: 1400, height: 2000 });
     await preparePage(page);
-
-    const myBrand = await getMyBrand();
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i] || {};
@@ -408,6 +361,7 @@ async function runBatch(batchJson) {
         continue;
       }
 
+      // tweet can be object or stringified json
       if (typeof tweetObj === "string" && isProbablyJsonString(tweetObj)) {
         try { tweetObj = JSON.parse(tweetObj); } catch (_) {}
       }
@@ -418,14 +372,16 @@ async function runBatch(batchJson) {
 
       log(`▶ item ${i + 1}/${items.length}: ${out}`);
       try {
-        const r = await renderOne(page, context, tweetObj, out, myBrand);
+        const r = await renderOne(page, context, tweetObj, out);
         results.push({ i, ...r });
       } catch (e) {
         results.push({ ok: false, i, out, reason: "exception", error: e.message });
       }
     }
 
+    // Print one machine-readable line for Python
     console.log("__BATCH_RESULT__" + JSON.stringify({ results }));
+
     return 0;
   } catch (e) {
     console.error(`[${nowIso()}] ❌ batch failed: ${e.message}`);
@@ -436,6 +392,7 @@ async function runBatch(batchJson) {
 }
 
 async function runSingle(inputArg, outputPathArg) {
+  // Backwards compatibility: same as before (single screenshot)
   let tweetUrl = inputArg;
   let tweetObj = null;
 
@@ -449,6 +406,8 @@ async function runSingle(inputArg, outputPathArg) {
     tweetUrl = built;
   }
 
+  // If single input is URL but you want skip-video, we can't know without JSON.
+  // We'll just run as-is.
   let browser;
   try {
     browser = await chromium.launch({
@@ -461,17 +420,14 @@ async function runSingle(inputArg, outputPathArg) {
     });
 
     const context = await browser.newContext({
-      colorScheme: "light",
-      deviceScaleFactor: 2,
-      timezoneId: "Asia/Kolkata",
-      locale: "en-IN",
-    });
-
+  colorScheme: "light",
+  deviceScaleFactor: 2,
+  timezoneId: "Asia/Kolkata",
+  locale: "en-IN",
+});
     const page = await context.newPage();
     await page.setViewportSize({ width: 1400, height: 2000 });
     await preparePage(page);
-
-    const myBrand = await getMyBrand();
 
     await timeStep(`Goto tweet: ${tweetUrl}`, async () => {
       await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
@@ -493,9 +449,8 @@ async function runSingle(inputArg, outputPathArg) {
       return await pickTweetElement(page);
     });
 
-    await timeStep("DEDUP + replace header with my brand", async () => {
+    await timeStep("DEDUP: hide only duplicate media (keep real multi-media)", async () => {
       await dedupMediaOnly(tweetEl, page);
-      await replaceTweetHeaderWithMine(tweetEl, page, myBrand);
     });
 
     const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outputPathArg);
