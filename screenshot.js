@@ -119,13 +119,30 @@ async function forceWhiteCss(page) {
       [role="dialog"] { background: transparent !important; }
       [data-testid="tweet"] { background: #ffffff !important; }
 
-      /* Boost tweet text size for Instagram readability */
+      /* Tweet text — unchanged from your tuned version */
       [data-testid="tweetText"] {
         font-size: 1.70em !important;
         line-height: 1.5 !important;
       }
+
+      /* ── BRANDING: bigger name + handle ── */
       [data-testid="User-Name"] {
-        font-size: 1.70em !important;
+        font-size: 2.0em !important;    /* was 1.70em — bumped up */
+      }
+
+      /* ── BRANDING: bigger avatar ── */
+      [data-testid="Tweet-User-Avatar"],
+      [data-testid^="UserAvatar-Container"] {
+        width: 64px !important;         /* Twitter default is ~40px */
+        height: 64px !important;
+        min-width: 64px !important;
+        min-height: 64px !important;
+      }
+      [data-testid="Tweet-User-Avatar"] img,
+      [data-testid^="UserAvatar-Container"] img {
+        width: 64px !important;
+        height: 64px !important;
+        border-radius: 50% !important;
       }
     `,
   });
@@ -201,26 +218,15 @@ async function findCropRegion(page) {
 
     const tweetRect = tweet.getBoundingClientRect();
 
-    // ── TOP: find the avatar element directly — it's the true visual top ──
-    let contentTop = tweetRect.top; // fallback
-
-    // Try avatar container first
-    const avatarSelectors = [
-      '[data-testid="Tweet-User-Avatar"]',
-      '[data-testid^="UserAvatar-Container"]',
-    ];
-    for (const sel of avatarSelectors) {
+    // ── TOP: avatar element top ───────────────────────────────────────
+    let contentTop = tweetRect.top;
+    for (const sel of ['[data-testid="Tweet-User-Avatar"]', '[data-testid^="UserAvatar-Container"]']) {
       const el = tweet.querySelector(sel);
       if (el) {
         const r = el.getBoundingClientRect();
-        if (r.top > 0 && r.height > 0) {
-          contentTop = r.top;
-          break;
-        }
+        if (r.top > 0 && r.height > 0) { contentTop = r.top; break; }
       }
     }
-
-    // Fallback: find the topmost visible element in the tweet
     if (contentTop === tweetRect.top) {
       let minTop = Infinity;
       const walk = (el) => {
@@ -233,23 +239,17 @@ async function findCropRegion(page) {
       if (minTop < Infinity) contentTop = minTop;
     }
 
-    // ── BOTTOM: find where metrics start ─────────────────────────────
+    // ── BOTTOM: metrics start ─────────────────────────────────────────
     let metricsTop = null;
 
-    // Strategy 1: <time> element
     const timeEl = tweet.querySelector("time");
     if (timeEl) {
       let row = timeEl;
-      for (let i = 0; i < 6; i++) {
-        const p = row.parentElement;
-        if (!p || p === tweet) break;
-        row = p;
-      }
+      for (let i = 0; i < 6; i++) { const p = row.parentElement; if (!p || p === tweet) break; row = p; }
       const r = row.getBoundingClientRect();
       if (r.top > tweetRect.top && r.height > 0) metricsTop = r.top;
     }
 
-    // Strategy 2: action group
     if (metricsTop === null) {
       for (const g of tweet.querySelectorAll('[role="group"]')) {
         if (g.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"]')) {
@@ -259,33 +259,23 @@ async function findCropRegion(page) {
       }
     }
 
-    // Strategy 3: analytics button
     if (metricsTop === null) {
       const a = tweet.querySelector('[data-testid="analyticsButton"], a[href$="/analytics"]');
       if (a) {
         let row = a;
-        for (let i = 0; i < 5; i++) {
-          const p = row.parentElement;
-          if (!p || p === tweet) break;
-          row = p;
-        }
+        for (let i = 0; i < 5; i++) { const p = row.parentElement; if (!p || p === tweet) break; row = p; }
         const r = row.getBoundingClientRect();
         if (r.top > tweetRect.top) metricsTop = r.top;
       }
     }
 
-    // Strategy 4: time text scan
     if (metricsTop === null) {
       for (const el of tweet.querySelectorAll("*")) {
         if (el.children.length > 0) continue;
         const txt = (el.innerText || el.textContent || "").trim();
         if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(txt)) {
           let row = el;
-          for (let i = 0; i < 6; i++) {
-            const p = row.parentElement;
-            if (!p || p === tweet) break;
-            row = p;
-          }
+          for (let i = 0; i < 6; i++) { const p = row.parentElement; if (!p || p === tweet) break; row = p; }
           const r = row.getBoundingClientRect();
           if (r.top > tweetRect.top && r.height > 0) { metricsTop = r.top; break; }
         }
