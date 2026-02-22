@@ -341,9 +341,11 @@ async function runBatch(batchJson) {
     });
 
     const context = await browser.newContext({
-      colorScheme: "light",
-      deviceScaleFactor: 2,
-    });
+  colorScheme: "light",
+  deviceScaleFactor: 2,
+  timezoneId: "Asia/Kolkata",
+  locale: "en-IN",
+});
 
     const page = await context.newPage();
     await page.setViewportSize({ width: 1400, height: 2000 });
@@ -417,7 +419,12 @@ async function runSingle(inputArg, outputPathArg) {
       ],
     });
 
-    const context = await browser.newContext({ colorScheme: "light", deviceScaleFactor: 2 });
+    const context = await browser.newContext({
+  colorScheme: "light",
+  deviceScaleFactor: 2,
+  timezoneId: "Asia/Kolkata",
+  locale: "en-IN",
+});
     const page = await context.newPage();
     await page.setViewportSize({ width: 1400, height: 2000 });
     await preparePage(page);
