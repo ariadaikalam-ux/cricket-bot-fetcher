@@ -16,7 +16,12 @@ const { chromium } = require("playwright");
 const FINAL_W = 1080;
 const FINAL_H = 1350;
 
-// ───────────────────────────────────────────────
+// ── Canvas padding (px on each side) — tweak to taste ────────────────
+// 20px = thin clean border. Increase if you want more breathing room.
+const CANVAS_PAD = 20;
+// ─────────────────────────────────────────────────────────────────────
+
+// ────────────────────────────────────────────────
 //          YOUR BRANDING (will replace original)
 const MY_NAME = "Cric Thread 🏏";
 const MY_USERNAME = "@cric.thread";
@@ -230,6 +235,56 @@ async function dedupMediaOnly(tweetEl, page) {
   await page.waitForTimeout(200);
 }
 
+// ── Hide metrics bar, view count, and "Read N replies" ───────────────
+async function hideMetrics(page) {
+  await page.evaluate(() => {
+    // Hide all action button groups (reply, retweet, like, bookmark, share)
+    const groups = document.querySelectorAll('[role="group"]');
+    for (const g of groups) {
+      const hasAction = g.querySelector(
+        '[data-testid="reply"], [data-testid="retweet"], [data-testid="like"]'
+      );
+      if (hasAction) {
+        g.style.display = "none";
+        g.style.visibility = "hidden";
+      }
+    }
+
+    // Hide analytics / view count button
+    for (const sel of [
+      '[data-testid="analyticsButton"]',
+      'a[href$="/analytics"]',
+      '[data-testid="tweet_replies_count_button"]',
+    ]) {
+      for (const el of document.querySelectorAll(sel)) {
+        el.style.display = "none";
+        el.style.visibility = "hidden";
+      }
+    }
+
+    // Text-sweep: hide "Read N replies" and "N Views" by walking up to block parent
+    const allEls = document.querySelectorAll("a, button, div[role='button'], span");
+    for (const el of allEls) {
+      const txt = (el.innerText || el.textContent || "").trim();
+      if (/^Read \d+/.test(txt) || /\d[\d,.]*K?\s+Views?/i.test(txt)) {
+        let target = el;
+        for (let i = 0; i < 5; i++) {
+          const p = target.parentElement;
+          if (!p) break;
+          const tag = p.tagName.toLowerCase();
+          if (tag === "article" || tag === "section") break;
+          target = p;
+        }
+        target.style.display = "none";
+        target.style.visibility = "hidden";
+      }
+    }
+  });
+
+  await page.waitForTimeout(200);
+}
+// ─────────────────────────────────────────────────────────────────────
+
 async function customizeAuthor(page) {
   await page.evaluate(({ name, username }) => {
     // Display name
@@ -282,6 +337,36 @@ async function replaceProfilePic(page) {
   await page.waitForTimeout(200);
 }
 
+// ── Shared canvas HTML builder ────────────────────────────────────────
+function buildCanvasHtml(rawB64) {
+  return `
+    <!doctype html>
+    <html>
+      <head><meta charset="utf-8"/>
+      <style>
+        html, body { margin:0; padding:0; width:${FINAL_W}px; height:${FINAL_H}px; background:#ffffff; }
+        .canvas {
+          width:${FINAL_W}px; height:${FINAL_H}px;
+          display:flex; align-items:center; justify-content:center;
+          background:#ffffff;
+        }
+        .pad {
+          width:${FINAL_W}px; height:${FINAL_H}px;
+          padding:${CANVAS_PAD}px;
+          box-sizing:border-box;
+          display:flex; align-items:center; justify-content:center;
+        }
+        img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+      </style>
+      </head>
+      <body>
+        <div class="canvas"><div class="pad"><img src="data:image/png;base64,${rawB64}"/></div></div>
+      </body>
+    </html>
+  `;
+}
+// ─────────────────────────────────────────────────────────────────────
+
 async function renderOne(page, context, tweetObj, outPath) {
   const tweetUrl = buildTweetUrlFromJson(tweetObj);
   if (!tweetUrl) return { ok: false, reason: "missing_url_fields" };
@@ -297,7 +382,8 @@ async function renderOne(page, context, tweetObj, outPath) {
   await waitForTweetContent(page);
   await forceWhiteCss(page);
   await customizeAuthor(page);
-  await replaceProfilePic(page);   // ← profile pic swap
+  await replaceProfilePic(page);
+  await hideMetrics(page);           // ← hide metrics + replies
   await page.waitForTimeout(600);
 
   const tweetEl = await pickTweetElement(page);
@@ -311,25 +397,7 @@ async function renderOne(page, context, tweetObj, outPath) {
 
   const page2 = await context.newPage();
   await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
-
-  const html = `
-    <!doctype html>
-    <html>
-      <head><meta charset="utf-8"/>
-      <style>
-        html, body { margin:0; padding:0; width:${FINAL_W}px; height:${FINAL_H}px; background:#ffffff; }
-        .canvas { width:${FINAL_W}px; height:${FINAL_H}px; display:flex; align-items:center; justify-content:center; background:#ffffff; }
-        .pad { width:${FINAL_W}px; height:${FINAL_H}px; padding:64px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; }
-        img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-      </style>
-      </head>
-      <body>
-        <div class="canvas"><div class="pad"><img src="data:image/png;base64,${rawB64}"/></div></div>
-      </body>
-    </html>
-  `;
-
-  await page2.setContent(html, { waitUntil: "load" });
+  await page2.setContent(buildCanvasHtml(rawB64), { waitUntil: "load" });
   await page2.waitForTimeout(80);
   await page2.screenshot({ path: pngOut, type: "png" });
   await page2.close();
@@ -355,13 +423,15 @@ async function runBatch(batchJson) {
 
     const context = await browser.newContext({
       colorScheme: "light",
-      deviceScaleFactor: 2,
+      // ── deviceScaleFactor 3 = high-res, crisp output at 3× pixel density ──
+      deviceScaleFactor: 3,
       timezoneId: "Asia/Kolkata",
       locale: "en-IN",
     });
 
     const page = await context.newPage();
-    await page.setViewportSize({ width: 1400, height: 2000 });
+    // ── 600px viewport = Twitter renders mobile layout with larger text ──
+    await page.setViewportSize({ width: 600, height: 900 });
     await preparePage(page);
 
     for (let i = 0; i < items.length; i++) {
@@ -423,13 +493,15 @@ async function runSingle(inputArg, outputPathArg) {
 
     const context = await browser.newContext({
       colorScheme: "light",
-      deviceScaleFactor: 2,
+      // ── deviceScaleFactor 3 = high-res, crisp output at 3× pixel density ──
+      deviceScaleFactor: 3,
       timezoneId: "Asia/Kolkata",
       locale: "en-IN",
     });
 
     const page = await context.newPage();
-    await page.setViewportSize({ width: 1400, height: 2000 });
+    // ── 600px viewport = Twitter renders mobile layout with larger text ──
+    await page.setViewportSize({ width: 600, height: 900 });
     await preparePage(page);
 
     await timeStep(`Goto tweet: ${tweetUrl}`, async () => {
@@ -450,6 +522,10 @@ async function runSingle(inputArg, outputPathArg) {
 
     await timeStep("Replace profile pic via DOM", async () => {
       await replaceProfilePic(page);
+    });
+
+    await timeStep("Hide metrics + replies button", async () => {
+      await hideMetrics(page);
     });
 
     await timeStep("Let images settle", async () => {
@@ -477,18 +553,7 @@ async function runSingle(inputArg, outputPathArg) {
       const rawB64 = rawBuf.toString("base64");
       const page2 = await context.newPage();
       await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
-      const html = `
-        <!doctype html><html><head><meta charset="utf-8"/>
-        <style>
-          html, body { margin:0; padding:0; width:${FINAL_W}px; height:${FINAL_H}px; background:#fff; }
-          .canvas { width:${FINAL_W}px; height:${FINAL_H}px; display:flex; align-items:center; justify-content:center; background:#fff; }
-          .pad { width:${FINAL_W}px; height:${FINAL_H}px; padding:64px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; }
-          img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-        </style></head><body>
-        <div class="canvas"><div class="pad"><img src="data:image/png;base64,${rawB64}"/></div></div>
-        </body></html>
-      `;
-      await page2.setContent(html, { waitUntil: "load" });
+      await page2.setContent(buildCanvasHtml(rawB64), { waitUntil: "load" });
       await page2.waitForTimeout(80);
       await page2.screenshot({ path: pngOut, type: "png" });
       await page2.close();
