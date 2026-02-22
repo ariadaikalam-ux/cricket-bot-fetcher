@@ -19,7 +19,7 @@ IMGUR_CLIENT_ID    = os.environ.get("IMGUR_CLIENT_ID", "")
 
 TWITTER_ACCOUNTS = os.environ.get(
     "TWITTER_ACCOUNTS",
-    "mufaddal_vohra,criccrazyjohns,academy_dinda,klfied_,cricketcentrl,tuktuk_academy,ctrlmemes_,shebas_10dulkar,breathekohli"
+    "mufaddal_vohra,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar"
 )
 ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
