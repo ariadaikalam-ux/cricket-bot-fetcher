@@ -125,7 +125,33 @@ async function forceWhiteCss(page) {
     `,
   });
 }
+async function injectIdentity(page) {
+  await page.evaluate(({ name, username, photoBase64 }) => {
+    // 1. Target the Name and Username
+    // X/Twitter uses specific data-testids for these
+    const nameEl = document.querySelector('[data-testid="User-Name"]');
+    if (nameEl) {
+      // The first span is usually the Display Name
+      const spans = nameEl.querySelectorAll('span');
+      if (spans.length > 0) spans[0].innerText = name;
+      
+      // The second part is usually the @handle
+      if (spans.length > 1) spans[1].innerText = username;
+    }
 
+    // 2. Target the Profile Photo
+    // Look for the avatar image specifically
+    const avatar = document.querySelector('[data-testid="Tweet-User-Avatar"] img');
+    if (avatar) {
+      avatar.src = `data:image/jpeg;base64,${photoBase64}`;
+      avatar.srcset = `data:image/jpeg;base64,${photoBase64}`;
+    }
+  }, {
+    name: "Cric Thread 🏏",
+    username: "@cric.thread",
+    photoBase64: fs.readFileSync(path.resolve("IMG_6905.JPG")).toString('base64')
+  });
+}
 async function waitForTweetContent(page) {
   const candidates = ['[data-testid="tweet"]', "article", ".main-tweet", ".tweet-body"];
   for (const sel of candidates) {
