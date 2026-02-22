@@ -17,7 +17,6 @@ const FINAL_W = 1080;
 const FINAL_H = 1350;
 
 // ── Canvas padding (px on each side) — tweak to taste ────────────────
-// 20px = thin clean border. Increase if you want more breathing room.
 const CANVAS_PAD = 20;
 // ─────────────────────────────────────────────────────────────────────
 
@@ -25,7 +24,7 @@ const CANVAS_PAD = 20;
 //          YOUR BRANDING (will replace original)
 const MY_NAME = "Cric Thread 🏏";
 const MY_USERNAME = "@cric.thread";
-const MY_PHOTO = path.resolve("IMG_6905.JPG"); // must exist in same folder or provide full path
+const MY_PHOTO = path.resolve("IMG_6905.JPG");
 
 let MY_PHOTO_BUFFER;
 let MY_PHOTO_B64;
@@ -116,8 +115,6 @@ async function preparePage(page) {
     return route.continue();
   });
 
-  // Intercept profile image requests at network level using function matcher
-  // (more reliable than glob strings for subdomain CDN URLs)
   if (MY_PHOTO_BUFFER) {
     await page.route((url) => {
       const s = url.toString();
@@ -195,10 +192,7 @@ async function dedupMediaOnly(tweetEl, page) {
         for (const img of imgs) {
           const r = img.getBoundingClientRect();
           const area = r.width * r.height;
-          if (area > bestArea) {
-            bestArea = area;
-            best = img;
-          }
+          if (area > bestArea) { bestArea = area; best = img; }
         }
         return canon(best.currentSrc || best.src);
       }
@@ -212,87 +206,105 @@ async function dedupMediaOnly(tweetEl, page) {
       for (const img of imgs) {
         const sig = canon(img.currentSrc || img.src);
         if (!sig) continue;
-        if (seen.has(sig)) {
-          img.style.display = "none";
-          img.style.visibility = "hidden";
-        } else {
-          seen.add(sig);
-        }
+        if (seen.has(sig)) { img.style.display = "none"; img.style.visibility = "hidden"; }
+        else seen.add(sig);
       }
     }
     const seenTile = new Set();
     for (const tile of tiles) {
       const sig = tileSig(tile);
       if (!sig) continue;
-      if (seenTile.has(sig)) {
-        tile.style.display = "none";
-        tile.style.visibility = "hidden";
-      } else {
-        seenTile.add(sig);
-      }
+      if (seenTile.has(sig)) { tile.style.display = "none"; tile.style.visibility = "hidden"; }
+      else seenTile.add(sig);
     }
   });
   await page.waitForTimeout(200);
 }
 
-// ── Hide metrics bar, view count, and "Read N replies" ───────────────
+// ── Hide metrics — called AFTER full settle, with CSS injection too ───
 async function hideMetrics(page) {
+  // Inject CSS first — instant and reliable for anything already rendered
+  await page.addStyleTag({
+    content: `
+      /* Action bar: reply, retweet, like, bookmark, share */
+      [data-testid="reply"],
+      [data-testid="retweet"],
+      [data-testid="like"],
+      [data-testid="bookmark"],
+      [data-testid="share"],
+      /* Analytics / view count */
+      [data-testid="analyticsButton"],
+      a[href$="/analytics"],
+      /* Replies count button */
+      [data-testid="tweet_replies_count_button"] {
+        display: none !important;
+        visibility: hidden !important;
+      }
+    `,
+  });
+
+  // Then DOM sweep for the group containers and text-based elements
   await page.evaluate(() => {
-    // Hide all action button groups (reply, retweet, like, bookmark, share)
-    const groups = document.querySelectorAll('[role="group"]');
-    for (const g of groups) {
-      const hasAction = g.querySelector(
-        '[data-testid="reply"], [data-testid="retweet"], [data-testid="like"]'
-      );
-      if (hasAction) {
-        g.style.display = "none";
-        g.style.visibility = "hidden";
+    const hide = (el) => {
+      if (!el) return;
+      el.style.setProperty("display", "none", "important");
+      el.style.setProperty("visibility", "hidden", "important");
+    };
+
+    // Hide action button groups (the row containing reply/retweet/like)
+    for (const g of document.querySelectorAll('[role="group"]')) {
+      if (g.querySelector('[data-testid="reply"], [data-testid="retweet"], [data-testid="like"]')) {
+        hide(g);
       }
     }
 
-    // Hide analytics / view count button
-    for (const sel of [
-      '[data-testid="analyticsButton"]',
-      'a[href$="/analytics"]',
-      '[data-testid="tweet_replies_count_button"]',
-    ]) {
-      for (const el of document.querySelectorAll(sel)) {
-        el.style.display = "none";
-        el.style.visibility = "hidden";
+    // Walk up from text-matched elements to collapse their block container
+    const walkHide = (el, maxSteps = 5) => {
+      let target = el;
+      for (let i = 0; i < maxSteps; i++) {
+        const p = target.parentElement;
+        if (!p) break;
+        const tag = p.tagName.toLowerCase();
+        if (tag === "article" || tag === "section" || tag === "main") break;
+        target = p;
       }
-    }
+      hide(target);
+    };
 
-    // Text-sweep: hide "Read N replies" and "N Views" by walking up to block parent
-    const allEls = document.querySelectorAll("a, button, div[role='button'], span");
-    for (const el of allEls) {
+    // "126.6K Views" row — targets the time/views line
+    for (const el of document.querySelectorAll("span, a, div")) {
       const txt = (el.innerText || el.textContent || "").trim();
-      if (/^Read \d+/.test(txt) || /\d[\d,.]*K?\s+Views?/i.test(txt)) {
-        let target = el;
-        for (let i = 0; i < 5; i++) {
-          const p = target.parentElement;
-          if (!p) break;
-          const tag = p.tagName.toLowerCase();
-          if (tag === "article" || tag === "section") break;
-          target = p;
-        }
-        target.style.display = "none";
-        target.style.visibility = "hidden";
+      if (/\d[\d,.]*[KMB]?\s+Views?/i.test(txt) && txt.length < 30) {
+        walkHide(el, 6);
+      }
+    }
+
+    // "Read N replies" button
+    for (const el of document.querySelectorAll("a, button, div[role='button'], span")) {
+      const txt = (el.innerText || el.textContent || "").trim();
+      if (/^Read \d+\s+repl/i.test(txt)) {
+        walkHide(el, 5);
+      }
+    }
+
+    // Also hide the timestamp + views bar (contains "·" separator pattern)
+    // This targets the "10:53 PM · Feb 22, 2026 · 126.6K Views" line
+    for (const el of document.querySelectorAll("div, span")) {
+      const txt = (el.innerText || el.textContent || "").trim();
+      if (/\d{1,2}:\d{2}\s*(AM|PM).*·.*Views?/i.test(txt) && txt.length < 80) {
+        walkHide(el, 4);
       }
     }
   });
 
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(300);
 }
 // ─────────────────────────────────────────────────────────────────────
 
 async function customizeAuthor(page) {
   await page.evaluate(({ name, username }) => {
-    // Display name
     const nameSpans = document.querySelectorAll('[data-testid="User-Name"] span');
-    if (nameSpans.length >= 1) {
-      nameSpans[0].textContent = name;
-    }
-    // Username (@handle)
+    if (nameSpans.length >= 1) nameSpans[0].textContent = name;
     for (const span of nameSpans) {
       if (span.textContent.trim().startsWith("@")) {
         span.textContent = username;
@@ -304,13 +316,6 @@ async function customizeAuthor(page) {
   await page.waitForTimeout(300);
 }
 
-/**
- * Forcibly replace the avatar <img> src via DOM after page load.
- * This is the belt-and-suspenders fix — catches cases where the network
- * intercept fires too late or the browser uses a cached version.
- *
- * Only targets avatar-specific selectors — will NOT touch tweet media images.
- */
 async function replaceProfilePic(page) {
   if (!MY_PHOTO_B64) return;
 
@@ -318,17 +323,15 @@ async function replaceProfilePic(page) {
     const AVATAR_SELECTORS = [
       '[data-testid="Tweet-User-Avatar"] img',
       '[data-testid^="UserAvatar-Container"] img',
-      // Belt-and-suspenders: any img inside an <a> that links to a user profile photo
       'a[href$="/photo"] img',
       'a[href*="/photo/"] img',
     ];
-
     const replaced = new Set();
     for (const sel of AVATAR_SELECTORS) {
       for (const img of document.querySelectorAll(sel)) {
         if (replaced.has(img)) continue;
         img.src = b64;
-        img.srcset = ""; // clear srcset so browser doesn't revert to a CDN resolution
+        img.srcset = "";
         replaced.add(img);
       }
     }
@@ -383,8 +386,15 @@ async function renderOne(page, context, tweetObj, outPath) {
   await forceWhiteCss(page);
   await customizeAuthor(page);
   await replaceProfilePic(page);
-  await hideMetrics(page);           // ← hide metrics + replies
-  await page.waitForTimeout(600);
+
+  // ── Wait for full render before hiding metrics ────────────────────
+  await page.waitForTimeout(1200);
+  await hideMetrics(page);
+  // Run hideMetrics twice — second pass catches lazy-rendered elements
+  await page.waitForTimeout(400);
+  await hideMetrics(page);
+  await page.waitForTimeout(300);
+  // ─────────────────────────────────────────────────────────────────
 
   const tweetEl = await pickTweetElement(page);
   await dedupMediaOnly(tweetEl, page);
@@ -423,14 +433,12 @@ async function runBatch(batchJson) {
 
     const context = await browser.newContext({
       colorScheme: "light",
-      // ── deviceScaleFactor 3 = high-res, crisp output at 3× pixel density ──
       deviceScaleFactor: 3,
       timezoneId: "Asia/Kolkata",
       locale: "en-IN",
     });
 
     const page = await context.newPage();
-    // ── 600px viewport = Twitter renders mobile layout with larger text ──
     await page.setViewportSize({ width: 600, height: 900 });
     await preparePage(page);
 
@@ -493,14 +501,12 @@ async function runSingle(inputArg, outputPathArg) {
 
     const context = await browser.newContext({
       colorScheme: "light",
-      // ── deviceScaleFactor 3 = high-res, crisp output at 3× pixel density ──
       deviceScaleFactor: 3,
       timezoneId: "Asia/Kolkata",
       locale: "en-IN",
     });
 
     const page = await context.newPage();
-    // ── 600px viewport = Twitter renders mobile layout with larger text ──
     await page.setViewportSize({ width: 600, height: 900 });
     await preparePage(page);
 
@@ -524,12 +530,21 @@ async function runSingle(inputArg, outputPathArg) {
       await replaceProfilePic(page);
     });
 
-    await timeStep("Hide metrics + replies button", async () => {
+    await timeStep("Wait for full render before hiding metrics", async () => {
+      await page.waitForTimeout(1200);
+    });
+
+    await timeStep("Hide metrics + replies (pass 1)", async () => {
       await hideMetrics(page);
     });
 
-    await timeStep("Let images settle", async () => {
-      await page.waitForTimeout(600);
+    await timeStep("Hide metrics + replies (pass 2 — catches lazy elements)", async () => {
+      await page.waitForTimeout(400);
+      await hideMetrics(page);
+    });
+
+    await timeStep("Final settle", async () => {
+      await page.waitForTimeout(300);
     });
 
     const tweetEl = await timeStep("Pick best tweet element", async () => {
