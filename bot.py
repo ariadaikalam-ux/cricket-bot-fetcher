@@ -9,6 +9,9 @@ from typing import Optional, List, Dict, Any, Tuple
 import requests
 import re
 
+import hashlib
+
+
 # -----------------------
 # Env / Config
 # -----------------------
@@ -41,7 +44,8 @@ SLEEP_BEFORE_PUBLISH = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "5.0"))
 SLEEP_IMGUR          = float(os.environ.get("SLEEP_IMGUR", "0.5"))
 VERIFY_WAIT          = float(os.environ.get("VERIFY_WAIT", "8.0"))
 VERIFY_WINDOW        = int(os.environ.get("VERIFY_WINDOW", "600"))
-
+DEDUP_MIN_LEN = 25          # don't dedupe very short tweets
+DEDUP_HAMMING = 8           # <= 8 means "same-ish"
 BASE_DIR          = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE        = os.path.join(BASE_DIR, "state.json")
 SCREENSHOT_DIR    = os.path.join(BASE_DIR, "screenshots")
@@ -104,15 +108,6 @@ class StageTimer:
             log(f"❌ ERROR in {self.name}: {exc}")
         log(f"✅ END: {self.name} ({dt:.2f}s)")
         return False
-def sort_queue_oldest_first(queue: List[str], tweet_data: Dict[str, Any]) -> List[str]:
-    def key(tid: str):
-        t = tweet_data.get(tid, {})
-        ts = extract_tweet_time(t) or ""
-        try:
-            return parse_dt(ts)
-        except Exception:
-            return datetime.min.replace(tzinfo=timezone.utc)
-    return sorted(queue, key=key)
 
 # -----------------------
 # Time helpers
@@ -152,6 +147,15 @@ def extract_tweet_time(t: Dict[str, Any]) -> Optional[str]:
 def ensure_dirs():
     os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
+def sort_queue_oldest_first(queue: List[str], tweet_data: Dict[str, Any]) -> List[str]:
+    def key(tid: str):
+        t = tweet_data.get(tid, {})
+        ts = extract_tweet_time(t) or ""
+        try:
+            return parse_dt(ts)
+        except Exception:
+            return datetime.min.replace(tzinfo=timezone.utc)
+    return sorted(queue, key=key)
 
 # -----------------------
 # Tweet filters
@@ -226,8 +230,60 @@ def has_photo_media(t: Dict[str, Any]) -> bool:
         if isinstance(m, dict) and (m.get("type") or "").lower() == "photo":
             return True
     return False
+STOPWORDS = {
+    "the","a","an","and","or","to","of","in","on","for","with","at","by",
+    "is","are","was","were","be","been","it","this","that","these","those",
+    "today","yesterday","tomorrow","vs","v"
+}
 
+def normalize_text_for_dedupe(t: Dict[str, Any]) -> str:
+    txt = (t.get("full_text") or t.get("text") or "").lower()
 
+    # remove urls
+    txt = re.sub(r"https?://\S+|www\.\S+", " ", txt)
+
+    # remove mentions
+    txt = re.sub(r"@\w+", " ", txt)
+
+    # keep hashtags text but remove the #
+    txt = txt.replace("#", " ")
+
+    # normalize numbers (scores/stats) -> 0
+    # Keep small numbers (2, 6, 20) because they matter in cricket.
+    # Only normalize big numbers (years, 100+, etc.)
+    txt = re.sub(r"\b\d{3,}\b", " 0 ", txt)
+
+    # remove non letters/numbers/spaces
+    txt = re.sub(r"[^a-z0-9\s]+", " ", txt)
+
+    # split, remove stopwords, collapse
+    toks = [w for w in txt.split() if w and w not in STOPWORDS]
+
+    # if it's too short, it’s not safe to dedupe (avoid false positives)
+    norm = " ".join(toks)
+    return norm.strip()
+
+def simhash64(text: str) -> int:
+    if not text:
+        return 0
+    v = [0] * 64
+    for tok in text.split():
+        h = int(hashlib.md5(tok.encode("utf-8")).hexdigest(), 16)
+        for i in range(64):
+            bit = (h >> i) & 1
+            v[i] += 1 if bit else -1
+    out = 0
+    for i in range(64):
+        if v[i] > 0:
+            out |= (1 << i)
+    return out
+
+def hamming64(a: int, b: int) -> int:
+    x = a ^ b
+    try:
+        return x.bit_count()      # Python 3.10+
+    except AttributeError:
+        return bin(x).count("1")  # older
 # -----------------------
 # State
 # -----------------------
@@ -341,12 +397,8 @@ def passes_filters(
     posted_set: set,
     queued_set: set,
     seen_set: set,
+    content_hashes: set,   # NEW (in-memory per run)
 ) -> Tuple[bool, str]:
-    """
-    Returns (should_enqueue, skip_reason).
-    NOTE: caller must add tweet ID to seen_set AFTER calling this function,
-    not before — otherwise everything looks "seen" on first evaluation.
-    """
     tid = str(t.get("id_str") or t.get("id") or "")
     if not tid:                 return False, "no_id"
     if tid in seen_set:         return False, "seen"
@@ -368,8 +420,21 @@ def passes_filters(
     if created_dt <= cutoff_dt:
         return False, "old"
 
+    # ---- NEW: dedupe within same run (text-based) ----
+    norm = normalize_text_for_dedupe(t)
+    if len(norm) >= DEDUP_MIN_LEN:
+        h = simhash64(norm)
+    
+        for old_h in content_hashes:
+            dist = hamming64(h, old_h)
+            if dist <= DEDUP_HAMMING:
+                if DEBUG:
+                    log(f"[DEDUP] near-dup: tid={tid} ham={dist} norm={norm[:120]!r}")
+                return False, "near_dup_text"
+    
+        # only if NOT duplicate
+        t["_simhash64"] = h
     return True, ""
-
 # -----------------------
 # Fetch + filter + enqueue
 # -----------------------
@@ -393,13 +458,14 @@ def fetch_and_enqueue(
     posted_set = set(posted_list)
     queued_set = set(queue)
     seen_set   = set(state.get("seen") or [])
+    content_hashes: set = set()   # NEW: resets every run
 
 
     counts: Dict[str, int] = {
         "added": 0, "seen": 0, "posted": 0, "queued": 0,
         "retweet": 0, "quote": 0, "reply": 0,
         "video": 0, "no_photo": 0, "old": 0,
-        "no_time": 0, "bad_time": 0, "no_id": 0,
+        "no_time": 0, "bad_time": 0, "no_id": 0, "near_dup_text": 0,
     }
 
     def process_batch(tweets: List[Dict[str, Any]]) -> int:
@@ -409,17 +475,26 @@ def fetch_and_enqueue(
         for t in tweets:
             tid = str(t.get("id_str") or t.get("id") or "")
 
-            ok, reason = passes_filters(t, cutoff_dt, posted_set, queued_set, seen_set)
+            ok, reason = passes_filters(
+                t, cutoff_dt, posted_set, queued_set, seen_set, content_hashes
+            )
 
             # Mark seen AFTER checking
             if tid:
                 seen_set.add(tid)
 
             if ok:
+                # add hash only when actually enqueuing
+                h = t.get("_simhash64")
+                if isinstance(h, int) and h != 0:
+                    content_hashes.add(h)
+            
                 counts["added"] += 1
                 queue.append(tid)
                 queued_set.add(tid)
+                t.pop("_simhash64", None)
                 tweet_data[tid] = t
+                
                 n += 1
             else:
                 counts[reason] = counts.get(reason, 0) + 1
@@ -482,12 +557,12 @@ def fetch_and_enqueue(
     state["seen"] = list(seen_set)
 
     log(
-        f"  Filter summary — added: {counts['added']} | "
-        f"seen(skip): {counts['seen']} | reply: {counts['reply']} | "
-        f"quote: {counts['quote']} | retweet: {counts['retweet']} | "
-        f"video: {counts['video']} | no_photo: {counts['no_photo']} | "
-        f"old: {counts['old']} | dupe(posted/queued): {counts['posted'] + counts['queued']}"
-    )
+    f"  Filter summary — added: {counts['added']} | "
+    f"near_dup_text: {counts['near_dup_text']} | "
+    f"reply: {counts['reply']} | quote: {counts['quote']} | retweet: {counts['retweet']} | "
+    f"video: {counts['video']} | no_photo: {counts['no_photo']} | old: {counts['old']} | "
+    f"dupe(posted/queued): {counts['posted'] + counts['queued']}"
+)
 # -----------------------
 # Imgur upload
 # -----------------------
@@ -697,9 +772,8 @@ def main():
     # 1) Fetch + filter
     with StageTimer("1) Fetch & filter (per-account)"):
         fetch_and_enqueue(state, cutoff_dt, queue, posted_list, tweet_data)
-        # After fetch_and_enqueue(...)
-    state["queue"] = sort_queue_oldest_first(state["queue"], tweet_data)
-    queue = state["queue"]
+    # Sort oldest → newest (IMPORTANT: in-place)
+    queue[:] = sort_queue_oldest_first(queue, tweet_data)
 
     log(f"Queue: {len(queue)}/{THRESHOLD}")
 
