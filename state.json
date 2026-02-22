@@ -1,6 +1,15 @@
 {
   "start_time": "2026-02-22T02:24:44.661873+00:00",
-  "queue": [],
+  "queue": [
+    "2025537629752807565",
+    "2025537870115860881",
+    "2025538930997924176",
+    "2025540374815719872",
+    "2025540649953706111",
+    "2025543659266167207",
+    "2025544689068433517",
+    "2025547400300171566"
+  ],
   "posted": [
     "2025504147324162418",
     "2025505765071679763",
@@ -14,69 +23,2276 @@
     "2025519820549296430"
   ],
   "seen": [
+    "2025244433026089152",
+    "2025492539390963897",
+    "2025507912924446945",
+    "2025419166019399958",
+    "2025439425946345613",
     "2025313255997223193",
-    "2025519773459890449",
+    "2025215487274353127",
+    "2025530691895824766",
+    "2025143227209449780",
+    "2025530203762827741",
+    "2024843502337790380",
+    "2025108500767277488",
+    "2025227397415780498",
+    "2024842825372971072",
+    "2024816428826898481",
+    "2025501587582709795",
+    "2025537629752807565",
+    "2025102559678189599",
+    "2025034076944846953",
+    "2025496636596842676",
+    "2024468540800323900",
+    "2025537572886458778",
     "2025238680827560440",
+    "2025450667134026057",
+    "2025477640807920015",
+    "2025547400300171566",
+    "2025247511519396265",
+    "2025432813630357562",
+    "2025485810665923047",
+    "2025250631444033741",
     "2025464218217316794",
     "2025428622308507812",
-    "2025530203762827741",
-    "2025464525210947915",
-    "2025508331453038974",
-    "2025510877953400964",
-    "2025461459665432822",
-    "2025213337035055435",
-    "2025533101385089305",
-    "2025492539390963897",
-    "2025474983628312885",
-    "2025228653014261771",
-    "2025215487274353127",
-    "2024419204351533466",
-    "2025511066583871560",
-    "2025246141223448694",
-    "2025505765071679763",
-    "2025221839174410738",
-    "2024843502337790380",
-    "2025450418906824730",
-    "2025227397415780498",
-    "2025147002217246969",
-    "2025495943895003329",
-    "2025468823797989582",
-    "2025237508876108083",
-    "2025455147753845074",
-    "2025450372932976935",
-    "2025198844703854658",
+    "2025476627543851307",
+    "2025166312771911916",
     "2024876246233174440",
-    "2024764248250044891",
-    "2024468540800323900",
-    "2025530691895824766",
-    "2025477640807920015",
-    "2025436351345348848",
-    "2025219535520104725",
-    "2025462791910695178",
     "2025174275641200748",
-    "2025239023380562431",
-    "2025513762128863257",
-    "2025437428602077618",
-    "2025520940772466996",
-    "2025504147324162418",
-    "2024842825372971072",
-    "2025533335972520356",
-    "2024431503636385835",
-    "2025517297008599246",
+    "2025086930342609115",
     "2025519820549296430",
-    "2024477425535766634",
-    "2025501587582709795",
-    "2024559781093236970",
-    "2025439425946345613",
-    "2025433153368981686",
+    "2025213337035055435",
+    "2024668851770970426",
+    "2024895057464316133",
+    "2025218519517077954",
+    "2025143649781399688",
+    "2024852420321538264",
+    "2025101644732793051",
+    "2024764248250044891",
+    "2025246141223448694",
+    "2025540649953706111",
+    "2025268430526660819",
+    "2025436351345348848",
+    "2025147002217246969",
+    "2025530358662590513",
+    "2024889645927104939",
+    "2025129048763138086",
+    "2025462791910695178",
+    "2025535427713864146",
+    "2025533335972520356",
+    "2025184570967203989",
+    "2025437428602077618",
+    "2025239023380562431",
+    "2025474983628312885",
+    "2025538930997924176",
+    "2024895709796086047",
+    "2024876440429498427",
+    "2025198844703854658",
+    "2025513762128863257",
+    "2025504147324162418",
+    "2024850270862360783",
+    "2025143732744716349",
+    "2025265705260835234",
+    "2025211973303185470",
     "2025524324619452688",
-    "2025507912924446945",
-    "2025450667134026057",
-    "2025143227209449780",
-    "2025459683876602221"
+    "2025529671098810657",
+    "2025544689068433517",
+    "2025106854465208464",
+    "2025236725501735073",
+    "2025477780016955820",
+    "2025044341488759214",
+    "2025237508876108083",
+    "2024431503636385835",
+    "2025433153368981686",
+    "2025412991731335260",
+    "2024862405143175406",
+    "2024824792210403725",
+    "2025450358034616367",
+    "2025391159808589915",
+    "2024559781093236970",
+    "2025219535520104725",
+    "2025096192477278559",
+    "2025511066583871560",
+    "2025461459665432822",
+    "2024792834658955436",
+    "2025221839174410738",
+    "2025424187129823683",
+    "2025508331453038974",
+    "2025540485184643527",
+    "2025540374815719872",
+    "2024419204351533466",
+    "2025522896949633359",
+    "2025517297008599246",
+    "2025066006717366549",
+    "2025515799377797336",
+    "2025142345319276736",
+    "2024900691568074996",
+    "2024869411543535748",
+    "2025505765071679763",
+    "2025455147753845074",
+    "2025537870115860881",
+    "2025508305708396740",
+    "2024879826755330082",
+    "2025450418906824730",
+    "2025543241421218169",
+    "2024772499725312167",
+    "2025437862054044039",
+    "2025154331448934839",
+    "2025519773459890449",
+    "2025116227065315784",
+    "2025456831108448338",
+    "2025459683876602221",
+    "2024477425535766634",
+    "2024562651041571217",
+    "2025533101385089305",
+    "2025228653014261771",
+    "2025534738518462590",
+    "2025510353023692944",
+    "2024900648266088847",
+    "2024879365360873706",
+    "2025481532673294365",
+    "2025083269398790622",
+    "2025461138067259864",
+    "2025495943895003329",
+    "2025517706561380628",
+    "2025464525210947915",
+    "2025452908838617282",
+    "2025521344658686184",
+    "2025099746785067212",
+    "2025543659266167207",
+    "2025520940772466996",
+    "2025468823797989582",
+    "2025510877953400964",
+    "2024890260828897564",
+    "2024648864570171810",
+    "2024889453387677699",
+    "2025199588064247927",
+    "2025473344704053757",
+    "2025507307648672130",
+    "2024660000921309283",
+    "2025450372932976935"
   ],
-  "tweet_data": {},
-  "total_runs": 1,
+  "tweet_data": {
+    "2025547400300171566": {
+      "tweet_created_at": "2026-02-22T12:25:07.000000Z",
+      "id": 2025547400300171566,
+      "id_str": "2025547400300171566",
+      "type": "tweet",
+      "conversation_id_str": "2025547400300171566",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "- openers failed , middle order saved\n- top order failed, lower order saved\n- batting lineup failed, Sam Curran saved\n- bowling lineup failed, Sam Curran saved\n- everyone failed, pitch saved \n\nEngland cooking left right center in this WC https://t.co/8ufbOlzVPE",
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 1377187138731601927,
+        "id_str": "1377187138731601927",
+        "name": "TukTuk Academy",
+        "screen_name": "TukTuk_Academy",
+        "location": "academytuktuk@gmail.com",
+        "url": "http://Instagram.com/tuktuk_academy_",
+        "description": "Academy to celebrate and cherish some great TukTuk knocks. Parody.",
+        "protected": false,
+        "verified": true,
+        "followers_count": 160110,
+        "friends_count": 143,
+        "listed_count": 126,
+        "favourites_count": 13247,
+        "statuses_count": 12330,
+        "created_at": "2021-03-31T09:13:06.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1377187138731601927/1750163086",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1456139128236503042/iVKETwv6_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 0,
+      "reply_count": 8,
+      "retweet_count": 1,
+      "favorite_count": 74,
+      "views_count": 713,
+      "bookmark_count": 3,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/8ufbOlzVPE",
+            "expanded_url": "https://x.com/TukTuk_Academy/status/2025547400300171566/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": []
+              },
+              "medium": {
+                "faces": []
+              },
+              "orig": {
+                "faces": []
+              },
+              "small": {
+                "faces": []
+              }
+            },
+            "id_str": "2025546991057649664",
+            "indices": [
+              238,
+              261
+            ],
+            "media_key": "3_2025546991057649664",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025546991057649664"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwwQa3aQAAXApK.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1075,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 5
+                },
+                {
+                  "h": 1080,
+                  "w": 1080,
+                  "x": 372,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 947,
+                  "x": 439,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 540,
+                  "x": 642,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 1080,
+              "width": 1920
+            },
+            "sizes": {
+              "large": {
+                "h": 1080,
+                "resize": "fit",
+                "w": 1920
+              },
+              "medium": {
+                "h": 675,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 383,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/8ufbOlzVPE"
+          },
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/8ufbOlzVPE",
+            "expanded_url": "https://x.com/TukTuk_Academy/status/2025547400300171566/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": []
+              },
+              "medium": {
+                "faces": []
+              },
+              "orig": {
+                "faces": []
+              },
+              "small": {
+                "faces": []
+              }
+            },
+            "id_str": "2025546991057649664",
+            "indices": [
+              238,
+              261
+            ],
+            "media_key": "3_2025546991057649664",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025546991057649664"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwwQa3aQAAXApK.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1075,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 5
+                },
+                {
+                  "h": 1080,
+                  "w": 1080,
+                  "x": 372,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 947,
+                  "x": 439,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 540,
+                  "x": 642,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 1080,
+              "width": 1920
+            },
+            "sizes": {
+              "large": {
+                "h": 1080,
+                "resize": "fit",
+                "w": 1920
+              },
+              "medium": {
+                "h": 675,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 383,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/8ufbOlzVPE"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          237
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025540649953706111": {
+      "tweet_created_at": "2026-02-22T11:58:18.000000Z",
+      "id": 2025540649953706111,
+      "id_str": "2025540649953706111",
+      "type": "tweet",
+      "conversation_id_str": "2025540649953706111",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "What a match going on between SLvENG \ud83d\ude0d\ud83d\ude0d https://t.co/GqhTCieUBX",
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 1377187138731601927,
+        "id_str": "1377187138731601927",
+        "name": "TukTuk Academy",
+        "screen_name": "TukTuk_Academy",
+        "location": "academytuktuk@gmail.com",
+        "url": "http://Instagram.com/tuktuk_academy_",
+        "description": "Academy to celebrate and cherish some great TukTuk knocks. Parody.",
+        "protected": false,
+        "verified": true,
+        "followers_count": 160110,
+        "friends_count": 143,
+        "listed_count": 126,
+        "favourites_count": 13247,
+        "statuses_count": 12330,
+        "created_at": "2021-03-31T09:13:06.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1377187138731601927/1750163086",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1456139128236503042/iVKETwv6_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 0,
+      "reply_count": 11,
+      "retweet_count": 3,
+      "favorite_count": 93,
+      "views_count": 1517,
+      "bookmark_count": 2,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/GqhTCieUBX",
+            "expanded_url": "https://x.com/TukTuk_Academy/status/2025540649953706111/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": []
+              },
+              "medium": {
+                "faces": []
+              },
+              "orig": {
+                "faces": []
+              },
+              "small": {
+                "faces": []
+              }
+            },
+            "id_str": "2025540539559632896",
+            "indices": [
+              40,
+              63
+            ],
+            "media_key": "3_2025540539559632896",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025540539559632896"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwqY5Ka4AAC4Ni.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1075,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 5
+                },
+                {
+                  "h": 1080,
+                  "w": 1080,
+                  "x": 468,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 947,
+                  "x": 535,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 540,
+                  "x": 738,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 1080,
+              "width": 1920
+            },
+            "sizes": {
+              "large": {
+                "h": 1080,
+                "resize": "fit",
+                "w": 1920
+              },
+              "medium": {
+                "h": 675,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 383,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/GqhTCieUBX"
+          },
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/GqhTCieUBX",
+            "expanded_url": "https://x.com/TukTuk_Academy/status/2025540649953706111/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": []
+              },
+              "medium": {
+                "faces": []
+              },
+              "orig": {
+                "faces": []
+              },
+              "small": {
+                "faces": []
+              }
+            },
+            "id_str": "2025540539559632896",
+            "indices": [
+              40,
+              63
+            ],
+            "media_key": "3_2025540539559632896",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025540539559632896"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwqY5Ka4AAC4Ni.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1075,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 5
+                },
+                {
+                  "h": 1080,
+                  "w": 1080,
+                  "x": 468,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 947,
+                  "x": 535,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 540,
+                  "x": 738,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 1080,
+              "width": 1920
+            },
+            "sizes": {
+              "large": {
+                "h": 1080,
+                "resize": "fit",
+                "w": 1920
+              },
+              "medium": {
+                "h": 675,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 383,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/GqhTCieUBX"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          39
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025544689068433517": {
+      "tweet_created_at": "2026-02-22T12:14:21.000000Z",
+      "id": 2025544689068433517,
+      "id_str": "2025544689068433517",
+      "type": "tweet",
+      "conversation_id_str": "2025544689068433517",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "WILL JACKS IN T20 WORLD CUP 2026:\n\n39*(18) &amp; 17/1(2) vs Nepal\n16*(10) vs Scotland \n53*(22) &amp; 34/1(2) vs Italy\n21(14) &amp; 22/3(4) vs Sri Lanka \n\nOne of the best players in the tournament \ud83e\udee1 https://t.co/F34V5nlqco",
+      "source": "",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 743735095308099585,
+        "id_str": "743735095308099585",
+        "name": "Johns.",
+        "screen_name": "CricCrazyJohns",
+        "location": "India ",
+        "url": "https://whatsapp.com/channel/0029VbC3Se9DJ6Gx7jzojY0i",
+        "description": "Cricket fan for life, DM for Collaboration, Tips on in Profile\ud83e\udd1e",
+        "protected": false,
+        "verified": true,
+        "followers_count": 698911,
+        "friends_count": 567,
+        "listed_count": 0,
+        "favourites_count": 124151,
+        "statuses_count": 441665,
+        "created_at": "2016-06-17T09:20:39.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/743735095308099585/1770298694",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1878716552327086080/svu2jQwS_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 2,
+      "reply_count": 41,
+      "retweet_count": 25,
+      "favorite_count": 416,
+      "views_count": 4697,
+      "bookmark_count": 8,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "media": [
+          {
+            "display_url": "pic.x.com/F34V5nlqco",
+            "expanded_url": "https://x.com/CricCrazyJohns/status/2025544689068433517/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 90,
+                    "w": 90,
+                    "x": 712,
+                    "y": 113
+                  }
+                ]
+              }
+            },
+            "id_str": "2025544685755006976",
+            "indices": [
+              198,
+              221
+            ],
+            "media_key": "3_2025544685755006976",
+            "media_url_https": "https://pbs.twimg.com/media/HBwuKO8bgAAV223.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 672,
+                  "w": 1200,
+                  "x": 0,
+                  "y": 3
+                },
+                {
+                  "h": 675,
+                  "w": 675,
+                  "x": 525,
+                  "y": 0
+                },
+                {
+                  "h": 675,
+                  "w": 592,
+                  "x": 574,
+                  "y": 0
+                },
+                {
+                  "h": 675,
+                  "w": 338,
+                  "x": 701,
+                  "y": 0
+                },
+                {
+                  "h": 675,
+                  "w": 1200,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 675,
+              "width": 1200
+            },
+            "sizes": {
+              "large": {
+                "h": 675,
+                "w": 1200
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/F34V5nlqco"
+          }
+        ],
+        "display_text_range": [
+          0,
+          197
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025538930997924176": {
+      "tweet_created_at": "2026-02-22T11:51:28.000000Z",
+      "id": 2025538930997924176,
+      "id_str": "2025538930997924176",
+      "type": "tweet",
+      "conversation_id_str": "2025538930997924176",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "2 WICKETS FOR ARCHER.\n2 WICKETS FOR JACKS.\n\nSRI LANKA 22 FOR 4, WHAT A DREAM START FOR ENGLAND...!!!! https://t.co/SqKXIXIMNI",
+      "source": "",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 743735095308099585,
+        "id_str": "743735095308099585",
+        "name": "Johns.",
+        "screen_name": "CricCrazyJohns",
+        "location": "India ",
+        "url": "https://whatsapp.com/channel/0029VbC3Se9DJ6Gx7jzojY0i",
+        "description": "Cricket fan for life, DM for Collaboration, Tips on in Profile\ud83e\udd1e",
+        "protected": false,
+        "verified": true,
+        "followers_count": 698911,
+        "friends_count": 567,
+        "listed_count": 0,
+        "favourites_count": 124151,
+        "statuses_count": 441665,
+        "created_at": "2016-06-17T09:20:39.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/743735095308099585/1770298694",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1878716552327086080/svu2jQwS_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 3,
+      "reply_count": 39,
+      "retweet_count": 45,
+      "favorite_count": 873,
+      "views_count": 9024,
+      "bookmark_count": 5,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "media": [
+          {
+            "display_url": "pic.x.com/SqKXIXIMNI",
+            "expanded_url": "https://x.com/CricCrazyJohns/status/2025538930997924176/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 95,
+                    "w": 95,
+                    "x": 1023,
+                    "y": 971
+                  }
+                ]
+              }
+            },
+            "id_str": "2025538927621525504",
+            "indices": [
+              102,
+              125
+            ],
+            "media_key": "3_2025538927621525504",
+            "media_url_https": "https://pbs.twimg.com/media/HBwo7EObUAADTb1.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1075,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 5
+                },
+                {
+                  "h": 1080,
+                  "w": 1080,
+                  "x": 372,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 947,
+                  "x": 439,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 540,
+                  "x": 642,
+                  "y": 0
+                },
+                {
+                  "h": 1080,
+                  "w": 1920,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 1080,
+              "width": 1920
+            },
+            "sizes": {
+              "large": {
+                "h": 1080,
+                "w": 1920
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/SqKXIXIMNI"
+          }
+        ],
+        "display_text_range": [
+          0,
+          101
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025543659266167207": {
+      "tweet_created_at": "2026-02-22T12:10:15.000000Z",
+      "id": 2025543659266167207,
+      "id_str": "2025543659266167207",
+      "type": "tweet",
+      "conversation_id_str": "2025543659266167207",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "Rahul Dravid, Rohit Sharma and Suresh Raina at Shikhar Dhawan\u2019s wedding. \u2764\ufe0f https://t.co/R0ny3ztuDo",
+      "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 3133996860,
+        "id_str": "3133996860",
+        "name": "Mufaddal Vohra",
+        "screen_name": "mufaddal_vohra",
+        "location": "India",
+        "url": null,
+        "description": "\ud83c\uddee\ud83c\uddf3 | @henrygayle, @imVkohli, @ABdeVilliers17, @DaleSteyn62 & @msdhoni | Cricket.",
+        "protected": false,
+        "verified": true,
+        "followers_count": 1211654,
+        "friends_count": 388,
+        "listed_count": 1317,
+        "favourites_count": 67234,
+        "statuses_count": 191661,
+        "created_at": "2015-04-03T03:40:50.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/3133996860/1719689303",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1807134036449529856/2TB7kbUM_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 2,
+      "reply_count": 71,
+      "retweet_count": 33,
+      "favorite_count": 1296,
+      "views_count": 11784,
+      "bookmark_count": 3,
+      "lang": "hi",
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/R0ny3ztuDo",
+            "expanded_url": "https://x.com/mufaddal_vohra/status/2025543659266167207/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 453,
+                    "y": 170
+                  },
+                  {
+                    "h": 107,
+                    "w": 107,
+                    "x": 668,
+                    "y": 182
+                  },
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 197,
+                    "y": 172
+                  },
+                  {
+                    "h": 131,
+                    "w": 131,
+                    "x": 879,
+                    "y": 194
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 453,
+                    "y": 170
+                  },
+                  {
+                    "h": 107,
+                    "w": 107,
+                    "x": 668,
+                    "y": 182
+                  },
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 197,
+                    "y": 172
+                  },
+                  {
+                    "h": 131,
+                    "w": 131,
+                    "x": 879,
+                    "y": 194
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 453,
+                    "y": 170
+                  },
+                  {
+                    "h": 107,
+                    "w": 107,
+                    "x": 668,
+                    "y": 182
+                  },
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 197,
+                    "y": 172
+                  },
+                  {
+                    "h": 131,
+                    "w": 131,
+                    "x": 879,
+                    "y": 194
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 69,
+                    "w": 69,
+                    "x": 280,
+                    "y": 105
+                  },
+                  {
+                    "h": 66,
+                    "w": 66,
+                    "x": 412,
+                    "y": 112
+                  },
+                  {
+                    "h": 69,
+                    "w": 69,
+                    "x": 121,
+                    "y": 106
+                  },
+                  {
+                    "h": 80,
+                    "w": 80,
+                    "x": 543,
+                    "y": 119
+                  }
+                ]
+              }
+            },
+            "id_str": "2025543647463358464",
+            "indices": [
+              76,
+              99
+            ],
+            "media_key": "3_2025543647463358464",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025543647463358464"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwtNzAaQAA0qLb.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 616,
+                  "w": 1100,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 858,
+                  "w": 858,
+                  "x": 242,
+                  "y": 0
+                },
+                {
+                  "h": 858,
+                  "w": 753,
+                  "x": 347,
+                  "y": 0
+                },
+                {
+                  "h": 858,
+                  "w": 429,
+                  "x": 671,
+                  "y": 0
+                },
+                {
+                  "h": 858,
+                  "w": 1100,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 858,
+              "width": 1100
+            },
+            "sizes": {
+              "large": {
+                "h": 858,
+                "resize": "fit",
+                "w": 1100
+              },
+              "medium": {
+                "h": 858,
+                "resize": "fit",
+                "w": 1100
+              },
+              "small": {
+                "h": 530,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/R0ny3ztuDo"
+          },
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/R0ny3ztuDo",
+            "expanded_url": "https://x.com/mufaddal_vohra/status/2025543659266167207/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 453,
+                    "y": 170
+                  },
+                  {
+                    "h": 107,
+                    "w": 107,
+                    "x": 668,
+                    "y": 182
+                  },
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 197,
+                    "y": 172
+                  },
+                  {
+                    "h": 131,
+                    "w": 131,
+                    "x": 879,
+                    "y": 194
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 453,
+                    "y": 170
+                  },
+                  {
+                    "h": 107,
+                    "w": 107,
+                    "x": 668,
+                    "y": 182
+                  },
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 197,
+                    "y": 172
+                  },
+                  {
+                    "h": 131,
+                    "w": 131,
+                    "x": 879,
+                    "y": 194
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 453,
+                    "y": 170
+                  },
+                  {
+                    "h": 107,
+                    "w": 107,
+                    "x": 668,
+                    "y": 182
+                  },
+                  {
+                    "h": 113,
+                    "w": 113,
+                    "x": 197,
+                    "y": 172
+                  },
+                  {
+                    "h": 131,
+                    "w": 131,
+                    "x": 879,
+                    "y": 194
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 69,
+                    "w": 69,
+                    "x": 280,
+                    "y": 105
+                  },
+                  {
+                    "h": 66,
+                    "w": 66,
+                    "x": 412,
+                    "y": 112
+                  },
+                  {
+                    "h": 69,
+                    "w": 69,
+                    "x": 121,
+                    "y": 106
+                  },
+                  {
+                    "h": 80,
+                    "w": 80,
+                    "x": 543,
+                    "y": 119
+                  }
+                ]
+              }
+            },
+            "id_str": "2025543647463358464",
+            "indices": [
+              76,
+              99
+            ],
+            "media_key": "3_2025543647463358464",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025543647463358464"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwtNzAaQAA0qLb.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 616,
+                  "w": 1100,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 858,
+                  "w": 858,
+                  "x": 242,
+                  "y": 0
+                },
+                {
+                  "h": 858,
+                  "w": 753,
+                  "x": 347,
+                  "y": 0
+                },
+                {
+                  "h": 858,
+                  "w": 429,
+                  "x": 671,
+                  "y": 0
+                },
+                {
+                  "h": 858,
+                  "w": 1100,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 858,
+              "width": 1100
+            },
+            "sizes": {
+              "large": {
+                "h": 858,
+                "resize": "fit",
+                "w": 1100
+              },
+              "medium": {
+                "h": 858,
+                "resize": "fit",
+                "w": 1100
+              },
+              "small": {
+                "h": 530,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/R0ny3ztuDo"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          75
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025540374815719872": {
+      "tweet_created_at": "2026-02-22T11:57:12.000000Z",
+      "id": 2025540374815719872,
+      "id_str": "2025540374815719872",
+      "type": "tweet",
+      "conversation_id_str": "2025540374815719872",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "- 3 for Jacks. \n- 2 for Archer. \n\nSRI LANKA 34/5 IN 5.4 OVERS. \ud83e\udd2f https://t.co/iwpn8x7poq",
+      "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 3133996860,
+        "id_str": "3133996860",
+        "name": "Mufaddal Vohra",
+        "screen_name": "mufaddal_vohra",
+        "location": "India",
+        "url": null,
+        "description": "\ud83c\uddee\ud83c\uddf3 | @henrygayle, @imVkohli, @ABdeVilliers17, @DaleSteyn62 & @msdhoni | Cricket.",
+        "protected": false,
+        "verified": true,
+        "followers_count": 1211654,
+        "friends_count": 388,
+        "listed_count": 1317,
+        "favourites_count": 67234,
+        "statuses_count": 191661,
+        "created_at": "2015-04-03T03:40:50.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/3133996860/1719689303",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1807134036449529856/2TB7kbUM_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 8,
+      "reply_count": 96,
+      "retweet_count": 98,
+      "favorite_count": 2112,
+      "views_count": 20399,
+      "bookmark_count": 11,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/iwpn8x7poq",
+            "expanded_url": "https://x.com/mufaddal_vohra/status/2025540374815719872/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": []
+              },
+              "medium": {
+                "faces": []
+              },
+              "orig": {
+                "faces": []
+              },
+              "small": {
+                "faces": []
+              }
+            },
+            "id_str": "2025540367135997952",
+            "indices": [
+              65,
+              88
+            ],
+            "media_key": "3_2025540367135997952",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025540367135997952"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwqO21bAAAlDr_.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 699,
+                  "w": 1248,
+                  "x": 18,
+                  "y": 0
+                },
+                {
+                  "h": 699,
+                  "w": 699,
+                  "x": 314,
+                  "y": 0
+                },
+                {
+                  "h": 699,
+                  "w": 613,
+                  "x": 357,
+                  "y": 0
+                },
+                {
+                  "h": 699,
+                  "w": 350,
+                  "x": 488,
+                  "y": 0
+                },
+                {
+                  "h": 699,
+                  "w": 1266,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 699,
+              "width": 1266
+            },
+            "sizes": {
+              "large": {
+                "h": 699,
+                "resize": "fit",
+                "w": 1266
+              },
+              "medium": {
+                "h": 663,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 375,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/iwpn8x7poq"
+          },
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/iwpn8x7poq",
+            "expanded_url": "https://x.com/mufaddal_vohra/status/2025540374815719872/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": []
+              },
+              "medium": {
+                "faces": []
+              },
+              "orig": {
+                "faces": []
+              },
+              "small": {
+                "faces": []
+              }
+            },
+            "id_str": "2025540367135997952",
+            "indices": [
+              65,
+              88
+            ],
+            "media_key": "3_2025540367135997952",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025540367135997952"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwqO21bAAAlDr_.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 699,
+                  "w": 1248,
+                  "x": 18,
+                  "y": 0
+                },
+                {
+                  "h": 699,
+                  "w": 699,
+                  "x": 314,
+                  "y": 0
+                },
+                {
+                  "h": 699,
+                  "w": 613,
+                  "x": 357,
+                  "y": 0
+                },
+                {
+                  "h": 699,
+                  "w": 350,
+                  "x": 488,
+                  "y": 0
+                },
+                {
+                  "h": 699,
+                  "w": 1266,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 699,
+              "width": 1266
+            },
+            "sizes": {
+              "large": {
+                "h": 699,
+                "resize": "fit",
+                "w": 1266
+              },
+              "medium": {
+                "h": 663,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 375,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/iwpn8x7poq"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          64
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025537629752807565": {
+      "tweet_created_at": "2026-02-22T11:46:18.000000Z",
+      "id": 2025537629752807565,
+      "id_str": "2025537629752807565",
+      "type": "tweet",
+      "conversation_id_str": "2025537629752807565",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "SRI LANKA 20/3 IN JUST 3.4 OVERS. \n\n- England on the top. https://t.co/6mmsZmpXl4",
+      "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 3133996860,
+        "id_str": "3133996860",
+        "name": "Mufaddal Vohra",
+        "screen_name": "mufaddal_vohra",
+        "location": "India",
+        "url": null,
+        "description": "\ud83c\uddee\ud83c\uddf3 | @henrygayle, @imVkohli, @ABdeVilliers17, @DaleSteyn62 & @msdhoni | Cricket.",
+        "protected": false,
+        "verified": true,
+        "followers_count": 1211654,
+        "friends_count": 388,
+        "listed_count": 1317,
+        "favourites_count": 67234,
+        "statuses_count": 191661,
+        "created_at": "2015-04-03T03:40:50.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/3133996860/1719689303",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1807134036449529856/2TB7kbUM_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 6,
+      "reply_count": 84,
+      "retweet_count": 30,
+      "favorite_count": 795,
+      "views_count": 14719,
+      "bookmark_count": 1,
+      "lang": "en",
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/6mmsZmpXl4",
+            "expanded_url": "https://x.com/mufaddal_vohra/status/2025537629752807565/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": []
+              },
+              "medium": {
+                "faces": []
+              },
+              "orig": {
+                "faces": []
+              },
+              "small": {
+                "faces": []
+              }
+            },
+            "id_str": "2025537616586883072",
+            "indices": [
+              58,
+              81
+            ],
+            "media_key": "3_2025537616586883072",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025537616586883072"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwnuwPaQAA0The.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 765,
+                  "w": 1366,
+                  "x": 0,
+                  "y": 3
+                },
+                {
+                  "h": 768,
+                  "w": 768,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 768,
+                  "w": 674,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 768,
+                  "w": 384,
+                  "x": 115,
+                  "y": 0
+                },
+                {
+                  "h": 768,
+                  "w": 1366,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 768,
+              "width": 1366
+            },
+            "sizes": {
+              "large": {
+                "h": 768,
+                "resize": "fit",
+                "w": 1366
+              },
+              "medium": {
+                "h": 675,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 382,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/6mmsZmpXl4"
+          },
+          {
+            "allow_download_status": {
+              "allow_download": true
+            },
+            "display_url": "pic.x.com/6mmsZmpXl4",
+            "expanded_url": "https://x.com/mufaddal_vohra/status/2025537629752807565/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": []
+              },
+              "medium": {
+                "faces": []
+              },
+              "orig": {
+                "faces": []
+              },
+              "small": {
+                "faces": []
+              }
+            },
+            "id_str": "2025537616586883072",
+            "indices": [
+              58,
+              81
+            ],
+            "media_key": "3_2025537616586883072",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025537616586883072"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwnuwPaQAA0The.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 765,
+                  "w": 1366,
+                  "x": 0,
+                  "y": 3
+                },
+                {
+                  "h": 768,
+                  "w": 768,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 768,
+                  "w": 674,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 768,
+                  "w": 384,
+                  "x": 115,
+                  "y": 0
+                },
+                {
+                  "h": 768,
+                  "w": 1366,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 768,
+              "width": 1366
+            },
+            "sizes": {
+              "large": {
+                "h": 768,
+                "resize": "fit",
+                "w": 1366
+              },
+              "medium": {
+                "h": 675,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 382,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/6mmsZmpXl4"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          57
+        ]
+      },
+      "is_pinned": false
+    },
+    "2025537870115860881": {
+      "tweet_created_at": "2026-02-22T11:47:15.000000Z",
+      "id": 2025537870115860881,
+      "id_str": "2025537870115860881",
+      "type": "tweet",
+      "conversation_id_str": "2025537870115860881",
+      "community_id_str": null,
+      "community_name": null,
+      "text": null,
+      "full_text": "Will Jacks \ud83e\udd76\ud83d\udd25\n\nSrilanka lost 3 Wickets in 20 runs While Chasing 147 Target\n\n#T20WorldCup https://t.co/C6peSP0nJo",
+      "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "user": {
+        "id": 4713197502,
+        "id_str": "4713197502",
+        "name": "\ud835\udc7a\ud835\udc89\ud835\udc86\ud835\udc83\ud835\udc82\ud835\udc94",
+        "screen_name": "Shebas_10dulkar",
+        "location": "",
+        "url": "http://instagram.com/shebas_10dulkar",
+        "description": "Cricket Lover \ud83c\udfcf || Engineer || Sachin Tendulkar \ud83d\ude4f || Team India \ud83c\uddee\ud83c\uddf3 || Mumbai Indians || Thalapathy Vijay || Backup Account @Shebas_10",
+        "protected": false,
+        "verified": true,
+        "followers_count": 75356,
+        "friends_count": 552,
+        "listed_count": 159,
+        "favourites_count": 99556,
+        "statuses_count": 74076,
+        "created_at": "2016-01-05T11:13:47.000000Z",
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/4713197502/1451993093",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1385298061992206336/P1whYb-M_normal.jpg",
+        "can_dm": true,
+        "affiliation_label": null
+      },
+      "quoted_status_id": null,
+      "quoted_status_id_str": null,
+      "is_quote_status": false,
+      "quoted_status": null,
+      "retweeted_status": null,
+      "quote_count": 0,
+      "reply_count": 15,
+      "retweet_count": 19,
+      "favorite_count": 306,
+      "views_count": 2916,
+      "bookmark_count": 4,
+      "lang": "en",
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              76,
+              88
+            ],
+            "text": "T20WorldCup"
+          }
+        ],
+        "media": [
+          {
+            "display_url": "pic.x.com/C6peSP0nJo",
+            "expanded_url": "https://x.com/Shebas_10dulkar/status/2025537870115860881/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 176,
+                    "w": 176,
+                    "x": 1122,
+                    "y": 198
+                  },
+                  {
+                    "h": 142,
+                    "w": 142,
+                    "x": 494,
+                    "y": 774
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 103,
+                    "w": 103,
+                    "x": 657,
+                    "y": 116
+                  },
+                  {
+                    "h": 83,
+                    "w": 83,
+                    "x": 289,
+                    "y": 453
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 176,
+                    "w": 176,
+                    "x": 1122,
+                    "y": 198
+                  },
+                  {
+                    "h": 142,
+                    "w": 142,
+                    "x": 494,
+                    "y": 774
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 58,
+                    "w": 58,
+                    "x": 372,
+                    "y": 65
+                  },
+                  {
+                    "h": 47,
+                    "w": 47,
+                    "x": 164,
+                    "y": 256
+                  }
+                ]
+              }
+            },
+            "id_str": "2025537850067091456",
+            "indices": [
+              89,
+              112
+            ],
+            "media_key": "3_2025537850067091456",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025537850067091456"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwn8WBbgAA9RM8.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1147,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 901
+                },
+                {
+                  "h": 2048,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 1796,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 1024,
+                  "x": 358,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 2048,
+              "width": 2048
+            },
+            "sizes": {
+              "large": {
+                "h": 2048,
+                "resize": "fit",
+                "w": 2048
+              },
+              "medium": {
+                "h": 1200,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 680,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/C6peSP0nJo"
+          },
+          {
+            "display_url": "pic.x.com/C6peSP0nJo",
+            "expanded_url": "https://x.com/Shebas_10dulkar/status/2025537870115860881/photo/1",
+            "ext_media_availability": {
+              "status": "Available"
+            },
+            "features": {
+              "large": {
+                "faces": [
+                  {
+                    "h": 176,
+                    "w": 176,
+                    "x": 1122,
+                    "y": 198
+                  },
+                  {
+                    "h": 142,
+                    "w": 142,
+                    "x": 494,
+                    "y": 774
+                  }
+                ]
+              },
+              "medium": {
+                "faces": [
+                  {
+                    "h": 103,
+                    "w": 103,
+                    "x": 657,
+                    "y": 116
+                  },
+                  {
+                    "h": 83,
+                    "w": 83,
+                    "x": 289,
+                    "y": 453
+                  }
+                ]
+              },
+              "orig": {
+                "faces": [
+                  {
+                    "h": 176,
+                    "w": 176,
+                    "x": 1122,
+                    "y": 198
+                  },
+                  {
+                    "h": 142,
+                    "w": 142,
+                    "x": 494,
+                    "y": 774
+                  }
+                ]
+              },
+              "small": {
+                "faces": [
+                  {
+                    "h": 58,
+                    "w": 58,
+                    "x": 372,
+                    "y": 65
+                  },
+                  {
+                    "h": 47,
+                    "w": 47,
+                    "x": 164,
+                    "y": 256
+                  }
+                ]
+              }
+            },
+            "id_str": "2025537850067091456",
+            "indices": [
+              89,
+              112
+            ],
+            "media_key": "3_2025537850067091456",
+            "media_results": {
+              "result": {
+                "media_key": "3_2025537850067091456"
+              }
+            },
+            "media_url_https": "https://pbs.twimg.com/media/HBwn8WBbgAA9RM8.jpg",
+            "original_info": {
+              "focus_rects": [
+                {
+                  "h": 1147,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 901
+                },
+                {
+                  "h": 2048,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 1796,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 1024,
+                  "x": 358,
+                  "y": 0
+                },
+                {
+                  "h": 2048,
+                  "w": 2048,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "height": 2048,
+              "width": 2048
+            },
+            "sizes": {
+              "large": {
+                "h": 2048,
+                "resize": "fit",
+                "w": 2048
+              },
+              "medium": {
+                "h": 1200,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 680,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/C6peSP0nJo"
+          }
+        ],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [],
+        "display_text_range": [
+          0,
+          88
+        ]
+      },
+      "is_pinned": false
+    }
+  },
+  "total_runs": 2,
   "total_carousels": 1,
   "in_flight": [],
   "last_caption_index": 0,
