@@ -115,10 +115,11 @@ async function preparePage(page) {
   // (more reliable than glob strings for subdomain CDN URLs)
   if (MY_PHOTO_BUFFER) {
     await page.route((url) => {
+      const s = url.toString();
       return (
-        url.includes("profile_images") ||
-        url.includes("profile-images") ||
-        url.includes("pbs.twimg.com/profile")
+        s.includes("profile_images") ||
+        s.includes("profile-images") ||
+        s.includes("pbs.twimg.com/profile")
       );
     }, (route) => {
       route.fulfill({
