@@ -42,6 +42,44 @@ SCREENSHOT_SCRIPT = os.path.join(BASE_DIR, "screenshot.js")
 
 SESSION = requests.Session()
 
+RETRY_STATUSES = {429, 500, 502, 503, 504}
+
+def request_with_retry(method: str, url: str, *, params=None, data=None, headers=None, files=None,
+                       timeout=30, tries=3):
+    last = None
+    for i in range(tries):
+        try:
+            r = SESSION.request(
+                method,
+                url,
+                params=params,
+                data=data,
+                headers=headers,
+                files=files,
+                timeout=timeout,
+            )
+            last = r
+
+            if r.status_code in RETRY_STATUSES:
+                # respect Retry-After if present (common on 429)
+                ra = r.headers.get("Retry-After")
+                if ra and ra.isdigit():
+                    sleep_s = int(ra)
+                else:
+                    sleep_s = 2 ** i
+                time.sleep(sleep_s)
+                continue
+
+            return r
+
+        except requests.RequestException as e:
+            last = e
+            time.sleep(2 ** i)
+
+    # If last is a response, return it. If it's an exception, re-raise.
+    if isinstance(last, requests.Response):
+        return last
+    raise last
 # -----------------------
 # Logging / Timing
 # -----------------------
@@ -191,7 +229,38 @@ def bound_state(state: Dict[str, Any]) -> None:
     td = state.get("tweet_data", {})
     state["tweet_data"] = {k: v for k, v in td.items() if k in qset}
 
+def recover_in_flight(state: Dict[str, Any]) -> None:
+    """
+    If the previous run died after marking in_flight but before finishing,
+    we *assume* those tweets may have been posted and we must not repost them.
+    So we:
+      - move them to posted
+      - remove them from queue
+      - clear in_flight
+    """
+    inflight = state.get("in_flight") or []
+    if not isinstance(inflight, list) or not inflight:
+        state["in_flight"] = []
+        return
 
+    inflight_set = set(map(str, inflight))
+
+    # ensure posted exists
+    state.setdefault("posted", [])
+    posted_set = set(map(str, state["posted"]))
+
+    # move inflight -> posted
+    for tid in inflight_set:
+        if tid not in posted_set:
+            state["posted"].append(tid)
+            posted_set.add(tid)
+
+    # remove inflight from queue
+    state.setdefault("queue", [])
+    state["queue"] = [str(x) for x in state["queue"] if str(x) not in inflight_set]
+
+    # clear
+    state["in_flight"] = []
 # -----------------------
 # SocialData (fetch tweets)
 # -----------------------
@@ -201,7 +270,7 @@ def socialdata_search() -> List[Dict[str, Any]]:
     headers = {"Authorization": f"Bearer {SOCIALDATA_API_KEY}"}
     params = {"query": query, "type": "Latest"}
 
-    r = SESSION.get(url, headers=headers, params=params, timeout=30)
+    r = request_with_retry("GET", url, headers=headers, params=params, timeout=30, tries=3)
     r.raise_for_status()
     return (r.json().get("tweets") or [])
 
@@ -315,7 +384,7 @@ def upload_to_imgur(local_path: str) -> Optional[str]:
 
     with open(local_path, "rb") as f:
         files = {"image": f}
-        r = SESSION.post(url, headers=headers, files=files, timeout=60)
+        r = request_with_retry("POST", url, headers=headers, files=files, timeout=60, tries=4)
 
     if r.status_code >= 400:
         log(f"  ❌ Imgur HTTP {r.status_code}: {r.text[:200]}")
@@ -335,7 +404,7 @@ def upload_to_imgur(local_path: str) -> Optional[str]:
 def ig_create_image_container(image_url: str) -> Optional[str]:
     url = f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media"
     data = {"image_url": image_url, "is_carousel_item": "true", "access_token": IG_ACCESS_TOKEN}
-    r = SESSION.post(url, data=data, timeout=30)
+    r = request_with_retry("POST", url, data=data, timeout=30, tries=4)
     j = r.json()
     if "error" in j:
         log(f"  ❌ IG container error: {j}")
@@ -350,7 +419,7 @@ def ig_create_carousel(children_ids: List[str], caption: str) -> Optional[str]:
         "children": ",".join(children_ids),
         "access_token": IG_ACCESS_TOKEN
     }
-    r = SESSION.post(url, data=data, timeout=30)
+    r = request_with_retry("POST", url, data=data, timeout=30, tries=4)
     j = r.json()
     if "error" in j:
         log(f"  ❌ IG carousel create error: {j}")
@@ -360,7 +429,7 @@ def ig_create_carousel(children_ids: List[str], caption: str) -> Optional[str]:
 def ig_publish(creation_id: str) -> Optional[str]:
     url = f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media_publish"
     data = {"creation_id": creation_id, "access_token": IG_ACCESS_TOKEN}
-    r = SESSION.post(url, data=data, timeout=30)
+    r = request_with_retry("POST", url, data=data, timeout=30, tries=4)
     j = r.json()
     if "error" in j:
         log(f"  ❌ IG publish error: {j}")
@@ -393,6 +462,11 @@ def main():
     ensure_dirs()
 
     state = load_state()
+    # Recover from any previous half-finished run
+    recover_in_flight(state)
+    bound_state(state)
+    save_state(state)
+    
     state["total_runs"] = int(state.get("total_runs", 0)) + 1
 
     # Option A: first run sets start_time and exits (ignore all past)
@@ -502,6 +576,7 @@ def main():
     with StageTimer("4) Render screenshots (Playwright)"):
         local_paths: List[str] = []
         good_ids: List[str] = []
+        good_pairs: List[tuple[str, str]] = []  # (tid, path)
     
         ensure_dirs()
     
@@ -521,6 +596,7 @@ def main():
                 dbg(f"Reusing screenshot {tid}: {out_path}")
                 local_paths.append(out_path)
                 good_ids.append(tid)
+                good_pairs.append((tid, out_path))
                 continue
     
             batch_payload.append({"tweet": t_obj, "out": out_path})
@@ -563,6 +639,7 @@ def main():
                                         if os.path.exists(outp):
                                             local_paths.append(outp)
                                             good_ids.append(tid)
+                                            good_pairs.append((tid, outp))
     
                         if not parsed:
                             # fallback: just check files exist
@@ -573,6 +650,7 @@ def main():
                                     tid = os.path.splitext(os.path.basename(outp))[0]
                                     local_paths.append(outp)
                                     good_ids.append(tid)
+                                    good_pairs.append((tid, outp))
     
                         log(f"  ✅ batch rendered: {len(good_ids)} screenshots")
                         dbg(f"  stdout: {result.stdout[:600]}")
@@ -583,9 +661,9 @@ def main():
                     log(f"❌ screenshot batch error: {e}")
 
     # IMPORTANT: we no longer sleep per tweet, because it's one run now
-    log(f"Screenshots ok: {len(local_paths)}/{THRESHOLD}")
+    log(f"Screenshots ok: {len(good_pairs)}/{THRESHOLD}")
 
-    if len(local_paths) < 2:
+    if len(good_pairs) < 2:
         log("Not enough screenshots (need >=2). Keeping queue for retry. Exiting.")
         log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
@@ -595,8 +673,8 @@ def main():
         public_urls: List[str] = []
         imgur_good_ids: List[str] = []
 
-        for i, (path, tid) in enumerate(zip(local_paths, good_ids), 1):
-            log(f"  ▶ imgur {i}/{len(local_paths)}: {tid}")
+        for i, (tid, path) in enumerate(good_pairs, 1):
+            log(f"  ▶ imgur {i}/{len(good_pairs)}: {tid}")
             url = upload_to_imgur(path)
             if url:
                 public_urls.append(url)
@@ -606,11 +684,10 @@ def main():
                 log(f"  ⚠️  Imgur failed: {tid}")
             time.sleep(SLEEP_IMGUR)
 
-    log(f"Imgur ok: {len(public_urls)}/{len(local_paths)}")
+    log(f"Imgur ok: {len(public_urls)}/{len(good_pairs)}")
 
     if len(public_urls) < 2:
         log("Not enough public URLs (need >=2). Keeping queue for retry. Exiting.")
-        log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
     # 7) IG containers
@@ -651,7 +728,10 @@ def main():
             log("🧪 DRY_RUN=1 -> Skipping publish.")
             log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
             return
-
+        # Mark in-flight so if this run dies after publish, we don't repost next run
+        state["in_flight"] = imgur_good_ids[:]  # copy
+        bound_state(state)
+        save_state(state)
         post_id = ig_publish(car_id)
         if not post_id:
             log("❌ Publish failed. Keeping queue for retry. Exiting.")
@@ -678,7 +758,7 @@ def main():
         state["posted"] = posted_list
         state["tweet_data"] = tweet_data
         state["total_carousels"] = int(state.get("total_carousels", 0)) + 1
-
+        state["in_flight"] = []
         bound_state(state)
         save_state(state)
 
