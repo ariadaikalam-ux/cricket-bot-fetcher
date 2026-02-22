@@ -1,15 +1,6 @@
 name: cricket-bot
 
 on:
-  schedule:
-    - cron: "57 0 * * *"
-    - cron: "24 3 * * *"
-    - cron: "51 5 * * *"
-    - cron: "18 8 * * *"
-    - cron: "45 10 * * *"
-    - cron: "12 13 * * *"
-    - cron: "39 15 * * *"
-    - cron: "6 18 * * *"
   workflow_dispatch:
 
 concurrency:
