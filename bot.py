@@ -205,7 +205,9 @@ def load_state() -> Dict[str, Any]:
     s.setdefault("tweet_data", {})
     s.setdefault("total_runs", 0)
     s.setdefault("total_carousels", 0)
-
+    s.setdefault("in_flight", [])
+    if not isinstance(s["in_flight"], list):
+        s["in_flight"] = []
     if not isinstance(s["queue"], list):
         s["queue"] = []
     if not isinstance(s["posted"], list):
