@@ -35,10 +35,11 @@ CAPTIONS = [
 ]
 
 # Tuning
-SLEEP_IG_CONTAINER   = float(os.environ.get("SLEEP_IG_CONTAINER", "10"))
-SLEEP_BEFORE_PUBLISH = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "15.0"))
+SLEEP_IG_CONTAINER_MIN = float(os.environ.get("SLEEP_IG_CONTAINER_MIN", "1"))
+SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "2"))
+SLEEP_BEFORE_PUBLISH = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "5.0"))
 SLEEP_IMGUR          = float(os.environ.get("SLEEP_IMGUR", "0.5"))
-VERIFY_WAIT          = float(os.environ.get("VERIFY_WAIT", "15.0"))
+VERIFY_WAIT          = float(os.environ.get("VERIFY_WAIT", "8.0"))
 VERIFY_WINDOW        = int(os.environ.get("VERIFY_WINDOW", "600"))
 
 BASE_DIR          = os.path.dirname(os.path.abspath(__file__))
@@ -800,7 +801,8 @@ def main():
                 dbg(f"  container_id: {cid}")
             else:
                 log("  ⚠️  IG container failed")
-            time.sleep(SLEEP_IG_CONTAINER)
+            sleep_time = random.uniform(SLEEP_IG_CONTAINER_MIN, SLEEP_IG_CONTAINER_MAX)
+            time.sleep(sleep_time)
 
     log(f"IG containers ok: {len(container_ids)}/{len(public_urls)}")
     if len(container_ids) < 2:
