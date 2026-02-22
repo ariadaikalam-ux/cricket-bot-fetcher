@@ -15,13 +15,9 @@ const { chromium } = require("playwright");
 
 const FINAL_W = 1080;
 const FINAL_H = 1350;
-
-// ── Canvas padding (px on each side) ─────────────────────────────────
 const CANVAS_PAD = 30;
-// ─────────────────────────────────────────────────────────────────────
 
-// ────────────────────────────────────────────────
-//          YOUR BRANDING (will replace original)
+// ── YOUR BRANDING ─────────────────────────────────────────────────────
 const MY_NAME = "Cric Thread 🏏";
 const MY_USERNAME = "@cric.thread";
 const MY_PHOTO = path.resolve("IMG_6905.JPG");
@@ -34,7 +30,7 @@ if (fs.existsSync(MY_PHOTO)) {
 } else {
   console.warn(`[WARNING] Profile photo not found: ${MY_PHOTO}`);
 }
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────
 
 function nowIso() { return new Date().toISOString(); }
 function log(msg) { console.log(`[${nowIso()}] ${msg}`); }
@@ -129,114 +125,6 @@ async function waitForTweetContent(page) {
   throw new Error("Tweet selector not found");
 }
 
-async function pickTweetElement(page) {
-  const locTweet = page.locator('[data-testid="tweet"]').first();
-  if (await locTweet.count()) return locTweet;
-  const locArticle = page.locator("article").first();
-  if (await locArticle.count()) return locArticle;
-  const locMain = page.locator(".main-tweet").first();
-  if (await locMain.count()) return locMain;
-  return page.locator("body").first();
-}
-
-async function dedupMediaOnly(tweetEl, page) {
-  await tweetEl.evaluate((root) => {
-    const canon = (u) => {
-      if (!u) return "";
-      try { const url = new URL(u, location.href); return `${url.host}${url.pathname}`.toLowerCase(); }
-      catch { return String(u).split("?")[0].toLowerCase(); }
-    };
-    const tiles = Array.from(root.querySelectorAll(
-      '[data-testid="tweetPhoto"], [data-testid="videoPlayer"], div[aria-label="Embedded video"], div[aria-label="Embedded image"]'
-    ));
-    if (!tiles.length) return;
-    const tileSig = (tile) => {
-      const imgs = Array.from(tile.querySelectorAll("img"));
-      if (imgs.length) {
-        let best = imgs[0], bestArea = 0;
-        for (const img of imgs) { const r = img.getBoundingClientRect(); const a = r.width * r.height; if (a > bestArea) { bestArea = a; best = img; } }
-        return canon(best.currentSrc || best.src);
-      }
-      const vid = tile.querySelector("video");
-      return vid ? canon(vid.poster || vid.currentSrc || vid.src) : "";
-    };
-    for (const tile of tiles) {
-      const imgs = Array.from(tile.querySelectorAll("img")); const seen = new Set();
-      for (const img of imgs) { const sig = canon(img.currentSrc || img.src); if (!sig) continue; if (seen.has(sig)) { img.style.display = "none"; } else seen.add(sig); }
-    }
-    const seenTile = new Set();
-    for (const tile of tiles) { const sig = tileSig(tile); if (!sig) continue; if (seenTile.has(sig)) { tile.style.display = "none"; } else seenTile.add(sig); }
-  });
-  await page.waitForTimeout(200);
-}
-
-// ── The key fix: inject CSS + DOM sweep, called after networkidle ─────
-async function hideMetrics(page) {
-  // CSS injection — works on everything already painted
-  await page.addStyleTag({
-    content: `
-      [data-testid="reply"],
-      [data-testid="retweet"],
-      [data-testid="like"],
-      [data-testid="bookmark"],
-      [data-testid="share"],
-      [data-testid="analyticsButton"],
-      [data-testid="tweet_replies_count_button"],
-      a[href$="/analytics"] {
-        display: none !important;
-        visibility: hidden !important;
-      }
-    `,
-  });
-
-  await page.evaluate(() => {
-    const hide = (el) => {
-      if (!el) return;
-      el.style.setProperty("display", "none", "important");
-      el.style.setProperty("visibility", "hidden", "important");
-    };
-
-    // Hide the entire action group row
-    for (const g of document.querySelectorAll('[role="group"]')) {
-      if (g.querySelector('[data-testid="reply"], [data-testid="retweet"], [data-testid="like"]')) hide(g);
-    }
-
-    // Walk up helper — stops before article/section
-    const walkHide = (el, steps = 5) => {
-      let t = el;
-      for (let i = 0; i < steps; i++) {
-        const p = t.parentElement;
-        if (!p) break;
-        const tag = p.tagName.toLowerCase();
-        if (tag === "article" || tag === "section" || tag === "main") break;
-        t = p;
-      }
-      hide(t);
-    };
-
-    // "Read N replies" button
-    for (const el of document.querySelectorAll("a, button, div[role='button']")) {
-      if (/^Read \d+\s+repl/i.test((el.innerText || "").trim())) walkHide(el, 5);
-    }
-
-    // Timestamp + views row: "10:53 PM · Feb 22, 2026 · 127.4K Views"
-    for (const el of document.querySelectorAll("div, span, a")) {
-      const txt = (el.innerText || el.textContent || "").trim();
-      // matches "10:53 PM · Feb 22..." pattern
-      if (/\d{1,2}:\d{2}\s*(AM|PM)/i.test(txt) && txt.includes("·") && txt.length < 100) {
-        walkHide(el, 4);
-      }
-      // matches standalone "127.4K Views"
-      if (/^\d[\d,.]*[KMB]?\s+Views?$/i.test(txt)) {
-        walkHide(el, 4);
-      }
-    }
-  });
-
-  await page.waitForTimeout(200);
-}
-// ─────────────────────────────────────────────────────────────────────
-
 async function customizeAuthor(page) {
   await page.evaluate(({ name, username }) => {
     const nameSpans = document.querySelectorAll('[data-testid="User-Name"] span');
@@ -251,7 +139,12 @@ async function customizeAuthor(page) {
 async function replaceProfilePic(page) {
   if (!MY_PHOTO_B64) return;
   await page.evaluate((b64) => {
-    const SELECTORS = ['[data-testid="Tweet-User-Avatar"] img', '[data-testid^="UserAvatar-Container"] img', 'a[href$="/photo"] img', 'a[href*="/photo/"] img'];
+    const SELECTORS = [
+      '[data-testid="Tweet-User-Avatar"] img',
+      '[data-testid^="UserAvatar-Container"] img',
+      'a[href$="/photo"] img',
+      'a[href*="/photo/"] img',
+    ];
     const replaced = new Set();
     for (const sel of SELECTORS) {
       for (const img of document.querySelectorAll(sel)) {
@@ -263,7 +156,85 @@ async function replaceProfilePic(page) {
   await page.waitForTimeout(200);
 }
 
-// ── Canvas builder ────────────────────────────────────────────────────
+async function dedupMediaOnly(page) {
+  await page.evaluate(() => {
+    const canon = (u) => {
+      if (!u) return "";
+      try { const url = new URL(u, location.href); return `${url.host}${url.pathname}`.toLowerCase(); }
+      catch { return String(u).split("?")[0].toLowerCase(); }
+    };
+    const tiles = Array.from(document.querySelectorAll(
+      '[data-testid="tweetPhoto"], [data-testid="videoPlayer"]'
+    ));
+    const seenTile = new Set();
+    for (const tile of tiles) {
+      const img = tile.querySelector("img");
+      const sig = img ? canon(img.currentSrc || img.src) : "";
+      if (!sig) continue;
+      if (seenTile.has(sig)) tile.style.display = "none";
+      else seenTile.add(sig);
+    }
+  });
+  await page.waitForTimeout(200);
+}
+
+// ── THE REAL FIX: find the bottom of meaningful tweet content ─────────
+// Instead of fighting React's DOM, we find the last visible element
+// that is NOT part of the metrics/actions area, and crop to that Y.
+async function findCropBottom(page) {
+  return await page.evaluate(() => {
+    const tweet = document.querySelector('[data-testid="tweet"]') || document.querySelector("article");
+    if (!tweet) return null;
+
+    const tweetTop = tweet.getBoundingClientRect().top;
+    const tweetLeft = tweet.getBoundingClientRect().left;
+    const tweetWidth = tweet.getBoundingClientRect().width;
+
+    // Elements we want to EXCLUDE from our crop (metrics/actions)
+    const isMetricsNode = (el) => {
+      // Check the element itself and its parents up to tweet root
+      let cur = el;
+      while (cur && cur !== tweet) {
+        const tid = cur.getAttribute?.("data-testid") || "";
+        if (["reply", "retweet", "like", "bookmark", "share", "analyticsButton",
+             "tweet_replies_count_button"].includes(tid)) return true;
+        if (cur.getAttribute?.("role") === "group") {
+          // check if this group contains action buttons
+          if (cur.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"]')) return true;
+        }
+        // "Read N replies" text
+        const txt = (cur.innerText || cur.textContent || "").trim();
+        if (/^Read \d+/.test(txt) && txt.length < 30) return true;
+        // timestamp+views line
+        if (/\d{1,2}:\d{2}\s*(AM|PM)/i.test(txt) && txt.includes("·") && txt.length < 100) return true;
+        cur = cur.parentElement;
+      }
+      return false;
+    };
+
+    // Walk all leaf elements inside the tweet, find lowest Y that is NOT metrics
+    let maxBottom = 0;
+    const walk = (el) => {
+      if (!el || el.nodeType !== 1) return;
+      if (isMetricsNode(el)) return; // skip entire subtree
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        if (r.bottom > maxBottom) maxBottom = r.bottom;
+      }
+      for (const child of el.children) walk(child);
+    };
+    walk(tweet);
+
+    return {
+      x: tweetLeft,
+      y: tweetTop,
+      width: tweetWidth,
+      contentBottom: maxBottom,
+    };
+  });
+}
+// ─────────────────────────────────────────────────────────────────────
+
 function buildCanvasHtml(rawB64) {
   return `<!doctype html><html><head><meta charset="utf-8"/>
   <style>
@@ -276,34 +247,33 @@ function buildCanvasHtml(rawB64) {
   </body></html>`;
 }
 
-// ── Core: screenshot a page, crop tightly to visible tweet content ────
-async function captureTweetTight(page, context, pngOut) {
-  const tweetEl = await pickTweetElement(page);
-  await dedupMediaOnly(tweetEl, page);
+async function captureAndCompose(page, context, pngOut) {
+  // Get the crop region — tweet top to end of last non-metrics element
+  const cropInfo = await findCropBottom(page);
+  if (!cropInfo) throw new Error("Could not determine crop region");
 
-  // Get bounding box of the tweet element
-  const box = await tweetEl.boundingBox();
-  if (!box) throw new Error("Could not get tweet bounding box");
+  const { x, y, width, contentBottom } = cropInfo;
+  const height = Math.max(50, contentBottom - y);
 
-  // Take full-page screenshot then crop, OR use clip directly
+  log(`  Crop region: x=${x.toFixed(0)}, y=${y.toFixed(0)}, w=${width.toFixed(0)}, h=${height.toFixed(0)}`);
+
   const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
-  // Clip screenshot to exact tweet bounds (no extra whitespace)
+  // Screenshot with pixel-perfect clip — cuts off metrics entirely
   await page.screenshot({
     path: rawPath,
     type: "png",
     clip: {
-      x: Math.max(0, box.x),
-      y: Math.max(0, box.y),
-      width: Math.min(box.width, 1800),
-      height: Math.min(box.height, 4000),
+      x: Math.max(0, x),
+      y: Math.max(0, y),
+      width: Math.min(width, 1800),
+      height: Math.min(height, 4000),
     },
   });
 
   if (!fs.existsSync(rawPath)) throw new Error("Raw screenshot did not write");
 
-  const rawBuf = fs.readFileSync(rawPath);
-  const rawB64 = rawBuf.toString("base64");
+  const rawB64 = fs.readFileSync(rawPath).toString("base64");
 
   const page2 = await context.newPage();
   await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
@@ -314,28 +284,22 @@ async function captureTweetTight(page, context, pngOut) {
 
   try { fs.unlinkSync(rawPath); } catch (_) {}
 }
-// ─────────────────────────────────────────────────────────────────────
 
-async function setupPage(context) {
-  const page = await context.newPage();
-  await page.setViewportSize({ width: 600, height: 900 });
-  await preparePage(page);
-  return page;
-}
-
-async function loadAndProcess(page, tweetUrl) {
-  // ── KEY FIX: wait for networkidle so React has fully hydrated ───
-  await page.goto(tweetUrl, { waitUntil: "networkidle", timeout: 60000 });
+async function loadTweet(page, tweetUrl) {
+  // domcontentloaded first (fast), then wait for the tweet to appear
+  await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await waitForTweetContent(page);
   await forceWhiteCss(page);
+
+  // Wait for images and JS to settle — this is when metrics appear
+  await page.waitForTimeout(2000);
+
   await customizeAuthor(page);
   await replaceProfilePic(page);
-  // Metrics are now fully rendered — hide them
-  await hideMetrics(page);
-  // One more pass after a short wait (catches any late-rendered elements)
+  await dedupMediaOnly(page);
+
+  // One more short wait for any final repaints
   await page.waitForTimeout(500);
-  await hideMetrics(page);
-  await page.waitForTimeout(200);
 }
 
 async function renderOne(page, context, tweetObj, outPath) {
@@ -345,11 +309,33 @@ async function renderOne(page, context, tweetObj, outPath) {
 
   const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outPath);
 
-  await loadAndProcess(page, tweetUrl);
-  await captureTweetTight(page, context, pngOut);
+  await loadTweet(page, tweetUrl);
+  await captureAndCompose(page, context, pngOut);
 
   if (alsoWriteJpg && jpgOut) { try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {} }
   return { ok: true, out: outPath, url: tweetUrl };
+}
+
+async function createBrowser() {
+  return chromium.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+  });
+}
+
+async function createContext(browser) {
+  return browser.newContext({
+    colorScheme: "light",
+    deviceScaleFactor: 3,
+    timezoneId: "Asia/Kolkata",
+    locale: "en-IN",
+  });
+}
+
+async function createPage(context) {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 600, height: 900 });
+  await preparePage(page);
+  return page;
 }
 
 async function runBatch(batchJson) {
@@ -359,9 +345,9 @@ async function runBatch(batchJson) {
     const items = JSON.parse(batchJson);
     if (!Array.isArray(items)) throw new Error("batch must be a JSON array");
 
-    browser = await chromium.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
-    const context = await browser.newContext({ colorScheme: "light", deviceScaleFactor: 3, timezoneId: "Asia/Kolkata", locale: "en-IN" });
-    const page = await setupPage(context);
+    browser = await createBrowser();
+    const context = await createContext(browser);
+    const page = await createPage(context);
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i] || {};
@@ -369,8 +355,12 @@ async function runBatch(batchJson) {
       let tweetObj = it.tweet;
 
       if (!out) { results.push({ ok: false, i, reason: "missing_out" }); continue; }
-      if (typeof tweetObj === "string" && isProbablyJsonString(tweetObj)) { try { tweetObj = JSON.parse(tweetObj); } catch (_) {} }
-      if (!tweetObj || typeof tweetObj !== "object") { results.push({ ok: false, i, out, reason: "missing_tweet" }); continue; }
+      if (typeof tweetObj === "string" && isProbablyJsonString(tweetObj)) {
+        try { tweetObj = JSON.parse(tweetObj); } catch (_) {}
+      }
+      if (!tweetObj || typeof tweetObj !== "object") {
+        results.push({ ok: false, i, out, reason: "missing_tweet" }); continue;
+      }
 
       log(`▶ item ${i + 1}/${items.length}: ${out}`);
       try {
@@ -402,19 +392,15 @@ async function runSingle(inputArg, outputPathArg) {
 
   let browser;
   try {
-    browser = await chromium.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
-    const context = await browser.newContext({ colorScheme: "light", deviceScaleFactor: 3, timezoneId: "Asia/Kolkata", locale: "en-IN" });
-    const page = await setupPage(context);
+    browser = await createBrowser();
+    const context = await createContext(browser);
+    const page = await createPage(context);
 
-    await timeStep(`Goto + networkidle: ${tweetUrl}`, async () => {
-      await loadAndProcess(page, tweetUrl);
-    });
+    await timeStep("Load tweet + settle", () => loadTweet(page, tweetUrl));
 
     const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outputPathArg);
 
-    await timeStep("Capture tight crop + compose 4:5 canvas", async () => {
-      await captureTweetTight(page, context, pngOut);
-    });
+    await timeStep("Smart crop + compose 4:5 canvas", () => captureAndCompose(page, context, pngOut));
 
     if (alsoWriteJpg && jpgOut) { try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {} }
 
@@ -428,7 +414,6 @@ async function runSingle(inputArg, outputPathArg) {
   }
 }
 
-// ── Entry point ───────────────────────────────────────────────────────
 (async () => {
   const args = process.argv.slice(2);
   if (args[0] === "--batch") { process.exit(await runBatch(args[1])); }
