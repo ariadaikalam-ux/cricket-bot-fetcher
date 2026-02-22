@@ -15,7 +15,7 @@ const { chromium } = require("playwright");
 
 const FINAL_W = 1080;
 const FINAL_H = 1350;
-const CANVAS_PAD = 30;
+const CANVAS_PAD = 85;
 
 // ── YOUR BRANDING ─────────────────────────────────────────────────────
 const MY_NAME = "Cric Thread 🏏";
@@ -106,10 +106,27 @@ async function forceWhiteCss(page) {
     content: `
       :root, html, body { background: #ffffff !important; }
       body { overflow: hidden !important; }
-      header, nav, aside, [role="banner"], [role="navigation"] { display: none !important; }
-      [data-testid="sidebarColumn"] { display: none !important; }
+      header, nav, aside,
+      [role="banner"], [role="navigation"],
+      [data-testid="sidebarColumn"],
+      [data-testid="TopNavBar"],
+      [data-testid="BottomBar"],
+      [data-testid="sheetDialog"],
+      [aria-label="Sign up"],
+      [aria-label="Log in"] {
+        display: none !important;
+      }
       [role="dialog"] { background: transparent !important; }
       [data-testid="tweet"] { background: #ffffff !important; }
+
+      /* Boost tweet text size for Instagram readability */
+      [data-testid="tweetText"] {
+        font-size: 1.70em !important;
+        line-height: 1.5 !important;
+      }
+      [data-testid="User-Name"] {
+        font-size: 1.70em !important;
+      }
     `,
   });
 }
@@ -176,14 +193,7 @@ async function dedupMediaOnly(page) {
   await page.waitForTimeout(200);
 }
 
-// ── CORE FIX: find where metrics START, use that Y as crop bottom ─────
-//
-// Strategy: locate the metrics/timestamp elements by finding them
-// DIRECTLY (top-down), not by walking up from leaves.
-// The timestamp line ("10:53 PM · Feb 22") always appears first.
-// We find its top Y and crop there. If no timestamp found, fall back
-// to the action group (reply/like/retweet row) top Y.
-//
+// ── Find crop region ──────────────────────────────────────────────────
 async function findCropRegion(page) {
   return await page.evaluate(() => {
     const tweet = document.querySelector('[data-testid="tweet"]') || document.querySelector("article");
@@ -191,15 +201,44 @@ async function findCropRegion(page) {
 
     const tweetRect = tweet.getBoundingClientRect();
 
-    // ── Strategy 1: find the timestamp+views line directly ────────────
-    // Twitter renders this as a <time> element or an <a> linking to the tweet
-    // The line contains "AM" or "PM" and "·" separators
+    // ── TOP: find the avatar element directly — it's the true visual top ──
+    let contentTop = tweetRect.top; // fallback
+
+    // Try avatar container first
+    const avatarSelectors = [
+      '[data-testid="Tweet-User-Avatar"]',
+      '[data-testid^="UserAvatar-Container"]',
+    ];
+    for (const sel of avatarSelectors) {
+      const el = tweet.querySelector(sel);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        if (r.top > 0 && r.height > 0) {
+          contentTop = r.top;
+          break;
+        }
+      }
+    }
+
+    // Fallback: find the topmost visible element in the tweet
+    if (contentTop === tweetRect.top) {
+      let minTop = Infinity;
+      const walk = (el) => {
+        if (!el || el.nodeType !== 1) return;
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0 && r.top < minTop) minTop = r.top;
+        for (const c of el.children) walk(c);
+      };
+      walk(tweet);
+      if (minTop < Infinity) contentTop = minTop;
+    }
+
+    // ── BOTTOM: find where metrics start ─────────────────────────────
     let metricsTop = null;
 
-    // Try <time> element first — most reliable
+    // Strategy 1: <time> element
     const timeEl = tweet.querySelector("time");
     if (timeEl) {
-      // Walk up to find the row container (the div wrapping the full timestamp line)
       let row = timeEl;
       for (let i = 0; i < 6; i++) {
         const p = row.parentElement;
@@ -207,30 +246,24 @@ async function findCropRegion(page) {
         row = p;
       }
       const r = row.getBoundingClientRect();
-      if (r.top > tweetRect.top && r.height > 0) {
-        metricsTop = r.top;
-      }
+      if (r.top > tweetRect.top && r.height > 0) metricsTop = r.top;
     }
 
-    // ── Strategy 2: find action group (reply/like/retweet row) ───────
+    // Strategy 2: action group
     if (metricsTop === null) {
       for (const g of tweet.querySelectorAll('[role="group"]')) {
         if (g.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"]')) {
           const r = g.getBoundingClientRect();
-          if (r.top > tweetRect.top && r.height > 0) {
-            metricsTop = r.top;
-            break;
-          }
+          if (r.top > tweetRect.top && r.height > 0) { metricsTop = r.top; break; }
         }
       }
     }
 
-    // ── Strategy 3: find by analytics button ─────────────────────────
+    // Strategy 3: analytics button
     if (metricsTop === null) {
-      const analytics = tweet.querySelector('[data-testid="analyticsButton"], a[href$="/analytics"]');
-      if (analytics) {
-        // Walk up to row container
-        let row = analytics;
+      const a = tweet.querySelector('[data-testid="analyticsButton"], a[href$="/analytics"]');
+      if (a) {
+        let row = a;
         for (let i = 0; i < 5; i++) {
           const p = row.parentElement;
           if (!p || p === tweet) break;
@@ -241,13 +274,11 @@ async function findCropRegion(page) {
       }
     }
 
-    // ── Strategy 4: scan all elements for timestamp text pattern ─────
+    // Strategy 4: time text scan
     if (metricsTop === null) {
-      const allEls = tweet.querySelectorAll("*");
-      for (const el of allEls) {
-        if (el.children.length > 0) continue; // leaf nodes only
+      for (const el of tweet.querySelectorAll("*")) {
+        if (el.children.length > 0) continue;
         const txt = (el.innerText || el.textContent || "").trim();
-        // matches "10:53 PM" pattern
         if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(txt)) {
           let row = el;
           for (let i = 0; i < 6; i++) {
@@ -256,23 +287,16 @@ async function findCropRegion(page) {
             row = p;
           }
           const r = row.getBoundingClientRect();
-          if (r.top > tweetRect.top && r.height > 0) {
-            metricsTop = r.top;
-            break;
-          }
+          if (r.top > tweetRect.top && r.height > 0) { metricsTop = r.top; break; }
         }
       }
     }
 
-    // ── If we found metrics, crop just above them ─────────────────────
-    // Add 8px buffer below last content element (the tweet image bottom)
-    const cropBottom = metricsTop !== null
-      ? metricsTop - 2  // 2px gap — cut right at the start of metrics
-      : tweetRect.bottom; // fallback: use full tweet height
+    const cropBottom = metricsTop !== null ? metricsTop - 2 : tweetRect.bottom;
 
     return {
       x: tweetRect.left,
-      y: tweetRect.top,
+      y: contentTop,
       width: tweetRect.width,
       cropBottom,
       metricsFound: metricsTop !== null,
@@ -333,7 +357,6 @@ async function loadTweet(page, tweetUrl) {
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await waitForTweetContent(page);
   await forceWhiteCss(page);
-  // Wait for full JS render including metrics bar
   await page.waitForTimeout(2500);
   await customizeAuthor(page);
   await replaceProfilePic(page);
