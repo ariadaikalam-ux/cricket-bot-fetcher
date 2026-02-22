@@ -23,8 +23,10 @@ const MY_USERNAME = "@cric.thread";
 const MY_PHOTO = path.resolve("IMG_6905.JPG"); // must exist in same folder or provide full path
 
 let MY_PHOTO_BUFFER;
+let MY_PHOTO_B64;
 if (fs.existsSync(MY_PHOTO)) {
   MY_PHOTO_BUFFER = fs.readFileSync(MY_PHOTO);
+  MY_PHOTO_B64 = `data:image/jpeg;base64,${MY_PHOTO_BUFFER.toString("base64")}`;
 } else {
   console.warn(`[WARNING] Profile photo not found: ${MY_PHOTO}`);
 }
@@ -109,9 +111,16 @@ async function preparePage(page) {
     return route.continue();
   });
 
-  // Intercept profile image requests and replace with custom photo
+  // Intercept profile image requests at network level using function matcher
+  // (more reliable than glob strings for subdomain CDN URLs)
   if (MY_PHOTO_BUFFER) {
-    await page.route("**/*profile_images*", (route) => {
+    await page.route((url) => {
+      return (
+        url.includes("profile_images") ||
+        url.includes("profile-images") ||
+        url.includes("pbs.twimg.com/profile")
+      );
+    }, (route) => {
       route.fulfill({
         status: 200,
         contentType: "image/jpeg",
@@ -227,7 +236,6 @@ async function customizeAuthor(page) {
     if (nameSpans.length >= 1) {
       nameSpans[0].textContent = name;
     }
-
     // Username (@handle)
     for (const span of nameSpans) {
       if (span.textContent.trim().startsWith("@")) {
@@ -235,14 +243,42 @@ async function customizeAuthor(page) {
         break;
       }
     }
-
-    // Optional: remove blue checkmark if you don't want it
-    // const check = document.querySelector('[data-testid="User-Name"] svg[aria-label*="Verified"]');
-    // if (check) check.remove();
   }, { name: MY_NAME, username: MY_USERNAME });
 
-  // Small delay to let DOM updates settle
   await page.waitForTimeout(300);
+}
+
+/**
+ * Forcibly replace the avatar <img> src via DOM after page load.
+ * This is the belt-and-suspenders fix — catches cases where the network
+ * intercept fires too late or the browser uses a cached version.
+ *
+ * Only targets avatar-specific selectors — will NOT touch tweet media images.
+ */
+async function replaceProfilePic(page) {
+  if (!MY_PHOTO_B64) return;
+
+  await page.evaluate((b64) => {
+    const AVATAR_SELECTORS = [
+      '[data-testid="Tweet-User-Avatar"] img',
+      '[data-testid^="UserAvatar-Container"] img',
+      // Belt-and-suspenders: any img inside an <a> that links to a user profile photo
+      'a[href$="/photo"] img',
+      'a[href*="/photo/"] img',
+    ];
+
+    const replaced = new Set();
+    for (const sel of AVATAR_SELECTORS) {
+      for (const img of document.querySelectorAll(sel)) {
+        if (replaced.has(img)) continue;
+        img.src = b64;
+        img.srcset = ""; // clear srcset so browser doesn't revert to a CDN resolution
+        replaced.add(img);
+      }
+    }
+  }, MY_PHOTO_B64);
+
+  await page.waitForTimeout(200);
 }
 
 async function renderOne(page, context, tweetObj, outPath) {
@@ -259,10 +295,8 @@ async function renderOne(page, context, tweetObj, outPath) {
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await waitForTweetContent(page);
   await forceWhiteCss(page);
-
-  // Apply name and username replacement (avatar handled by route intercept)
   await customizeAuthor(page);
-
+  await replaceProfilePic(page);   // ← profile pic swap
   await page.waitForTimeout(600);
 
   const tweetEl = await pickTweetElement(page);
@@ -369,10 +403,9 @@ async function runBatch(batchJson) {
 
 async function runSingle(inputArg, outputPathArg) {
   let tweetUrl = inputArg;
-  let tweetObj = null;
 
   if (isProbablyJsonString(inputArg)) {
-    tweetObj = JSON.parse(inputArg);
+    const tweetObj = JSON.parse(inputArg);
     const built = buildTweetUrlFromJson(tweetObj);
     if (!built) {
       console.error(`[${nowIso()}] ❌ Could not build tweet URL from JSON`);
@@ -410,8 +443,12 @@ async function runSingle(inputArg, outputPathArg) {
       await forceWhiteCss(page);
     });
 
-    await timeStep("Customize author (name / @ / photo)", async () => {
+    await timeStep("Customize author (name / @)", async () => {
       await customizeAuthor(page);
+    });
+
+    await timeStep("Replace profile pic via DOM", async () => {
+      await replaceProfilePic(page);
     });
 
     await timeStep("Let images settle", async () => {
