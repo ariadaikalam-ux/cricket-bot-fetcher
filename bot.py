@@ -45,7 +45,7 @@ SLEEP_IMGUR          = float(os.environ.get("SLEEP_IMGUR", "0.5"))
 VERIFY_WAIT          = float(os.environ.get("VERIFY_WAIT", "8.0"))
 VERIFY_WINDOW        = int(os.environ.get("VERIFY_WINDOW", "600"))
 DEDUP_MIN_LEN = 25          # don't dedupe very short tweets
-DEDUP_HAMMING = 8           # <= 8 means "same-ish"
+DEDUP_HAMMING = 7           # <= 8 means "same-ish"
 BASE_DIR          = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE        = os.path.join(BASE_DIR, "state.json")
 SCREENSHOT_DIR    = os.path.join(BASE_DIR, "screenshots")
@@ -473,6 +473,8 @@ def fetch_and_enqueue(
         n = 0
 
         for t in tweets:
+            if len(queue) >= THRESHOLD:
+                break  # stop adding more
             tid = str(t.get("id_str") or t.get("id") or "")
 
             ok, reason = passes_filters(
