@@ -394,21 +394,11 @@ def fetch_and_enqueue(
     }
 
     def process_batch(tweets: List[Dict[str, Any]]) -> int:
-        nonlocal max_seen_dt_global
+        
         n = 0
 
         for t in tweets:
             tid = str(t.get("id_str") or t.get("id") or "")
-
-            # Track max timestamp seen globally (from fetched tweets)
-            created_str = extract_tweet_time(t)
-            if created_str:
-                try:
-                    created_dt = parse_dt(created_str)
-                    if (max_seen_dt_global is None) or (created_dt > max_seen_dt_global):
-                        max_seen_dt_global = created_dt
-                except Exception:
-                    pass
 
             ok, reason = passes_filters(t, cutoff_dt, posted_set, queued_set, seen_set)
 
