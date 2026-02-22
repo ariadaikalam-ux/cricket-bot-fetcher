@@ -385,7 +385,6 @@ def fetch_and_enqueue(
     queued_set = set(queue)
     seen_set   = set(state.get("seen") or [])
 
-    max_seen_dt_global: Optional[datetime] = None
 
     counts: Dict[str, int] = {
         "added": 0, "seen": 0, "posted": 0, "queued": 0,
