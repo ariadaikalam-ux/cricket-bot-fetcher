@@ -300,6 +300,9 @@ def load_state() -> Dict[str, Any]:
             "last_caption_index": -1,
             "last_caption_text": "",
             "last_post_time": None,
+            "first_cycle": [],
+            "first_cycle_idx": 0,
+            "next_start_idx": 0,
         }
     with open(STATE_FILE, "r", encoding="utf-8") as f:
         s = json.load(f)
@@ -315,6 +318,9 @@ def load_state() -> Dict[str, Any]:
     s.setdefault("last_caption_index", -1)
     s.setdefault("last_caption_text", "")
     s.setdefault("last_post_time", None)
+    s.setdefault("first_cycle", [])
+    s.setdefault("first_cycle_idx", 0)
+    s.setdefault("next_start_idx", 0)
     if not isinstance(s["in_flight"], list):  s["in_flight"] = []
     if not isinstance(s["queue"], list):      s["queue"] = []
     if not isinstance(s["posted"], list):     s["posted"] = []
@@ -358,8 +364,66 @@ def pick_caption(state: Dict[str, Any]) -> Tuple[str, int]:
     last_index = int(state.get("last_caption_index", -1))
     next_index = (last_index + 1) % len(CAPTIONS)
     return CAPTIONS[next_index], next_index
+def pick_accounts_fair_first(state: Dict[str, Any], accounts: List[str]) -> List[str]:
+    """
+    Ensures each account gets equal chance to be 1st:
+      - Create a random permutation (cycle)
+      - Use next element as the 1st account each run
+      - When cycle ends, reshuffle a new cycle
+    Rest of accounts are shuffled randomly each run.
+    """
+    n = len(accounts)
+    if n <= 1:
+        return accounts[:]
 
+    cycle = state.get("first_cycle") or []
+    idx = int(state.get("first_cycle_idx", 0) or 0)
 
+    # Rebuild cycle if missing/invalid/different accounts set
+    if (not isinstance(cycle, list)) or (set(cycle) != set(accounts)) or (len(cycle) != n) or idx >= n:
+        cycle = accounts[:]
+        random.shuffle(cycle)
+        idx = 0
+
+    first = cycle[idx]
+    idx += 1
+
+    # If cycle finished, reshuffle next cycle
+    if idx >= n:
+        next_cycle = accounts[:]
+        random.shuffle(next_cycle)
+
+        # Optional: avoid same first across cycle boundary
+        # (prevents ...A as last of cycle and A as first of next cycle)
+        if next_cycle[0] == first and n > 1:
+            # simple swap with another position
+            j = random.randrange(1, n)
+            next_cycle[0], next_cycle[j] = next_cycle[j], next_cycle[0]
+
+        cycle = next_cycle
+        idx = 0
+
+    state["first_cycle"] = cycle
+    state["first_cycle_idx"] = idx
+
+    # Shuffle the remaining accounts for this run
+    rest = [a for a in accounts if a != first]
+    random.shuffle(rest)
+    return [first] + rest
+
+def pick_accounts_round_robin(state: Dict[str, Any], accounts: List[str]) -> List[str]:
+    n = len(accounts)
+    if n <= 1:
+        return accounts[:]
+
+    idx = int(state.get("next_start_idx", 0) or 0) % n
+
+    # build cyclic order starting from idx
+    order = accounts[idx:] + accounts[:idx]
+
+    # move start for next run
+    state["next_start_idx"] = (idx + 1) % n
+    return order
 # -----------------------
 # SocialData — single account fetch
 # -----------------------
@@ -484,6 +548,7 @@ def fetch_and_enqueue(
             # Mark seen AFTER checking
             if tid:
                 seen_set.add(tid)
+                counts["seen"] += 1
 
             if ok:
                 # add hash only when actually enqueuing
@@ -504,9 +569,12 @@ def fetch_and_enqueue(
         return n
 
     # Shuffle accounts every run
-    shuffled_accounts = ACCOUNTS[:]
-    random.shuffle(shuffled_accounts)
-    log(f"  Account order this run: {shuffled_accounts}")
+    order = pick_accounts_round_robin(state, ACCOUNTS)
+    first = order[0]
+    rest = order[1:]
+    random.shuffle(rest)
+    shuffled_accounts = [first] + rest
+    log(f"  Account order this run (rr-first+shuffle): {shuffled_accounts}")
 
     # Round 1: stop early when queue hits threshold
     log(f"  Round 1: fetching up to {len(shuffled_accounts)} accounts (stop at queue={THRESHOLD})...")
