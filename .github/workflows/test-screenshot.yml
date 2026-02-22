@@ -2,11 +2,6 @@ name: Test screenshot.js
 
 on:
   workflow_dispatch:
-    inputs:
-      tweet_url:
-        description: "Tweet/X URL"
-        required: true
-        default: "https://x.com/elonmusk/status/1234567890123456789"
 
 jobs:
   run:
@@ -30,11 +25,12 @@ jobs:
 
       - name: Run screenshot.js
         run: |
-    cat > tweet.json << 'JSON'
-    {"id_str":"2025547400300171566","user":{"screen_name":"TukTuk_Academy"}}
-    JSON
-    node screenshot.js "$(cat tweet.json)" out.png
-    ls -lah
+          cat > tweet.json << 'JSON'
+          {"id_str":"2025547400300171566","user":{"screen_name":"TukTuk_Academy"}}
+          JSON
+
+          node screenshot.js "$(cat tweet.json)" out.png
+          ls -lah
 
       - name: Upload output
         uses: actions/upload-artifact@v4
