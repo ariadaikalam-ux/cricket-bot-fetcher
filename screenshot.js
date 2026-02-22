@@ -87,7 +87,12 @@ function tweetHasVideo(tweetObj) {
 async function preparePage(page) {
   await page.route("**/*", (route) => {
     const url = route.request().url();
-    if (url.match(/\.(woff|woff2|ttf|otf)(\?|$)/i)) return route.abort();
+    if (url.match(/\.(woff|woff2|ttf|otf)(\?|$)/i)) {
+  // Allow Twitter's own Chirp font, block everything else
+  if (!url.includes("abs.twimg.com") && !url.includes("ton.twimg.com")) {
+    return route.abort();
+  }
+}
     if (url.includes("doubleclick") || url.includes("googletagmanager") ||
         url.includes("google-analytics") || url.includes("analytics")) return route.abort();
     return route.continue();
@@ -121,7 +126,8 @@ async function forceWhiteCss(page) {
 
       /* Tweet text — unchanged from your tuned version */
       [data-testid="tweetText"] {
-        font-size: 1.70em !important;
+        font-size: 1.62em !important;
+        font-weight: 401 !important;
         line-height: 1.5 !important;
       }
 
@@ -153,12 +159,17 @@ async function forceWhiteCss(page) {
         font-weight: 700 !important;
         line-height: 1.3 !important;
       }
+      
       [data-testid="caret"] {
         display: none !important;
       }
       /* Gap between author header and tweet body */
       [data-testid="tweetText"] {
-        margin-top: 14px !important;   /* add this line, keep your existing font-size/line-height */
+        margin-top: 16px !important;   /* add this line, keep your existing font-size/line-height */
+        display: -webkit-box !important;
+        -webkit-line-clamp: 9 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
       }
     `,
   });
