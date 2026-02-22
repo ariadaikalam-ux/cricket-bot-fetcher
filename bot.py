@@ -19,7 +19,7 @@ IMGUR_CLIENT_ID = os.environ.get("IMGUR_CLIENT_ID", "")
 TWITTER_ACCOUNTS = os.environ.get("TWITTER_ACCOUNTS", "mufaddal_vohra,criccrazyjohns,academy_dinda,klfied_,cricketcentrl,tuktuk_academy,ctrlmemes_,shebas_10dulkar,breathekohli")
 ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
-THRESHOLD = int(os.environ.get("TWEET_THRESHOLD", "10"))
+THRESHOLD = int(os.environ.get("TWEET_THRESHOLD", "15"))
 DRY_RUN = os.environ.get("DRY_RUN", "0") == "1"
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 SHOW_STATS = os.environ.get("SHOW_STATS", "0") == "1"
@@ -121,6 +121,29 @@ def is_video_tweet(t: Dict[str, Any]) -> bool:
         # Some payloads include video_info even if type is inconsistent
         if "video_info" in m:
             return True
+    return False
+
+def is_retweet(t: Dict[str, Any]) -> bool:
+    # 1) Classic Twitter payload style
+    if t.get("retweeted_status"):
+        return True
+
+    # 2) Some APIs mark retweets explicitly
+    ttype = (t.get("type") or "").lower()
+    if ttype in ("retweet", "retweeted_tweet"):
+        return True
+
+    # 3) Text form (fallback)
+    txt = (t.get("full_text") or t.get("text") or "").lstrip()
+    if txt.startswith("RT @"):
+        return True
+
+    # 4) Some payloads include a retweeted_status_id / retweet_id
+    for k in ("retweeted_status_id", "retweeted_status_id_str", "retweet_id", "retweet_id_str"):
+        v = t.get(k)
+        if v not in (None, "", 0):
+            return True
+
     return False
 # -----------------------
 # State
@@ -411,16 +434,22 @@ def main():
     with StageTimer("2) Filter + enqueue new tweets"):
         added = 0
         skipped_video = 0
+        skipped_retweet = 0
         skipped_old = 0
         skipped_no_time = 0
         skipped_dupe = 0
 
         for t in tweets:
+            # Skip retweets ASAP
+            if is_retweet(t):
+                skipped_retweet += 1
+                continue
+        
             tid = t.get("id_str") or t.get("id")
             if not tid:
                 continue
             tid = str(tid)
-
+        
             created_str = extract_tweet_time(t)
             if not created_str:
                 skipped_no_time += 1
@@ -430,23 +459,25 @@ def main():
             except Exception:
                 skipped_no_time += 1
                 continue
+        
             if is_video_tweet(t):
                 skipped_video += 1
                 continue
+        
             if created_dt < start_dt:
                 skipped_old += 1
                 continue
-
+        
             if tid in posted_set or tid in queued_set:
                 skipped_dupe += 1
                 continue
-
+        
             queue.append(tid)
             queued_set.add(tid)
             tweet_data[tid] = t
             added += 1
 
-    log(f"Queue add: +{added} | skipped_old: {skipped_old} | skipped_no_time: {skipped_no_time} | skipped_dupe: {skipped_dupe}")
+    log(f"Queue add: +{added} | skipped_old: {skipped_old} | skipped_no_time: {skipped_no_time} | skipped_dupe: {skipped_dupe} | skipped_video: {skipped_video} | skipped_retweet: {skipped_retweet}")
     log(f"Queue size now: {len(queue)}/{THRESHOLD}")
 
     # 3) Save state after enqueue
