@@ -216,40 +216,88 @@ async function customizeAuthor(page) {
   }
 
   await page.evaluate(({ name, username, photoBase64 }) => {
-    // Avatar
-    const avatar = document.querySelector('[data-testid^="UserAvatar-Container-"] img');
-    if (avatar) {
-      avatar.src = `data:image/jpeg;base64,${photoBase64}`;
-      avatar.srcset = "";
-      avatar.style.objectFit = "cover";
+    // Helper to create blob URL from base64 (to bypass potential CSP issues with data URLs)
+    const byteString = atob(photoBase64);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
     }
+    const blob = new Blob([ab], { type: 'image/jpeg' });
+    const blobUrl = URL.createObjectURL(blob);
 
-    // Display name (usually first strong/bold span in user-name block)
-    const nameSpans = document.querySelectorAll('[data-testid="User-Name"] span');
-    if (nameSpans.length >= 1) {
-      const target = nameSpans[0];
-      if (target) target.textContent = name;
-    }
+    // Replace avatar
+    const replaceAvatar = (container) => {
+      if (!container) return;
+      let img = container.querySelector('img');
+      if (!img) {
+        // Inject if missing
+        img = document.createElement('img');
+        img.alt = name;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.borderRadius = '50%';
+        img.style.objectFit = 'cover';
+        container.appendChild(img);
+      }
+      // Set to blob URL
+      img.src = blobUrl;
+      img.srcset = '';
+      img.sizes = '';
+      img.loading = 'eager';
 
-    // Username (@handle) — usually second span or one containing @
-    for (const span of nameSpans) {
-      if (span.textContent.trim().startsWith("@")) {
-        span.textContent = username;
-        break;
+      // If background-image is used
+      if (container.style.backgroundImage) {
+        container.style.backgroundImage = `url(${blobUrl})`;
+        container.style.backgroundSize = 'cover';
+      }
+    };
+
+    // Find avatar containers (multiple fallbacks)
+    const avatarSelectors = [
+      '[data-testid^="UserAvatar-Container-"]',
+      '[data-testid="UserAvatar"]',
+      '[data-testid="Tweet-User-Avatar"]',
+      'div[aria-label*="profile image"]',
+      'a[href*="/photo"] > div > img',
+      'div.r-1ny4l3l img[alt*="profile"]' // class-based fallback
+    ];
+
+    for (const sel of avatarSelectors) {
+      const containers = document.querySelectorAll(sel);
+      for (const container of containers) {
+        replaceAvatar(container);
       }
     }
 
-    // Optional: remove blue checkmark if you don't want it (uncomment if needed)
-    // const check = document.querySelector('[data-testid="User-Name"] svg[aria-label*="Verified"]');
-    // if (check) check.remove();
+    // Display name
+    const userNameBlock = document.querySelector('[data-testid="User-Name"]');
+    if (userNameBlock) {
+      const spans = userNameBlock.querySelectorAll('span');
+      let foundName = false;
+      for (const span of spans) {
+        const text = span.textContent.trim();
+        if (text && !text.startsWith('@') && !foundName) {
+          span.textContent = name;
+          foundName = true;
+        } else if (text.startsWith('@')) {
+          span.textContent = username;
+        }
+      }
+    }
+
+    // Optional: hide verification badge
+    // const badge = document.querySelector('[data-testid="User-Name"] svg[aria-label*="Verified account"]');
+    // if (badge) badge.style.display = 'none';
+
   }, {
     name: MY_NAME,
     username: MY_USERNAME,
     photoBase64: MY_PHOTO_BASE64
   });
 
-  // Small delay to let DOM updates settle
-  await page.waitForTimeout(300);
+  // Wait for DOM/images to settle
+  await page.waitForTimeout(800);
 }
 
 async function renderOne(page, context, tweetObj, outPath) {
@@ -263,7 +311,8 @@ async function renderOne(page, context, tweetObj, outPath) {
   const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outPath);
   const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
-  await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+  await page.goto(tweetUrl, { waitUntil: "networkidle", timeout: 45000 }); // Changed to networkidle for better image loading
+
   await waitForTweetContent(page);
   await forceWhiteCss(page);
 
@@ -331,6 +380,7 @@ async function runBatch(batchJson) {
       deviceScaleFactor: 2,
       timezoneId: "Asia/Kolkata",
       locale: "en-IN",
+      bypassCSP: true // Added to help with data/blob URLs if CSP issues
     });
 
     const page = await context.newPage();
@@ -400,6 +450,7 @@ async function runSingle(inputArg, outputPathArg) {
       deviceScaleFactor: 2,
       timezoneId: "Asia/Kolkata",
       locale: "en-IN",
+      bypassCSP: true // Added to help with data/blob URLs if CSP issues
     });
 
     const page = await context.newPage();
@@ -407,7 +458,7 @@ async function runSingle(inputArg, outputPathArg) {
     await preparePage(page);
 
     await timeStep(`Goto tweet: ${tweetUrl}`, async () => {
-      await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.goto(tweetUrl, { waitUntil: "networkidle", timeout: 45000 }); // Changed to networkidle
     });
 
     await timeStep("Wait for tweet content", async () => {
