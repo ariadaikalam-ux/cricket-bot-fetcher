@@ -16,7 +16,7 @@ const { chromium } = require("playwright");
 const FINAL_W = 1080;
 const FINAL_H = 1350;
 
-// ────────────────────────────────────────────────
+// ───────────────────────────────────────────────
 //          YOUR BRANDING (will replace original)
 const MY_NAME = "Cric Thread 🏏";
 const MY_USERNAME = "@cric.thread";
