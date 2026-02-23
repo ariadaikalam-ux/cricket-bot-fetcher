@@ -982,7 +982,7 @@ def main():
     total_t0 = perf_counter()
     log("=== cricket-bot starting ===")
     # Run-level jitter to avoid exact cron timing fingerprints
-    max_jitter = int(os.environ.get("RUN_JITTER_SECONDS", "8.67"))  # 0–20 min
+    max_jitter = float(os.environ.get("RUN_JITTER_SECONDS", "8.67"))
     j = random.randint(0, max_jitter)
     log(f"⏳ Run jitter: sleeping {j}s...")
     time.sleep(j)
