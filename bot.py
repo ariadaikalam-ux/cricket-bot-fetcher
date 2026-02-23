@@ -476,10 +476,15 @@ def build_or_query_chunks(accounts: List[str], since_unix: int) -> List[str]:
 # -----------------------
 # SocialData — execute one search query
 # -----------------------
-def socialdata_fetch_query(query: str) -> List[Dict[str, Any]]:
+def socialdata_fetch_query(query: str) -> Tuple[List[Dict[str, Any]], bool]:
     """
-    Execute one pre-built search query and return all tweets returned.
-    The query already contains server-side filters and since_time.
+    Execute one pre-built search query and return (tweets, ok).
+
+    ok=True  → HTTP 200 received, response parsed successfully (tweets may be [])
+    ok=False → request failed or exception raised
+
+    Callers MUST check ok to distinguish "API returned 0 tweets" (safe to advance
+    watermark) from "API failed and returned nothing" (unsafe — keep watermark).
     """
     headers = {"Authorization": f"Bearer {SOCIALDATA_API_KEY}"}
     params: Dict[str, Any] = {"query": query, "type": "Latest"}
@@ -491,10 +496,10 @@ def socialdata_fetch_query(query: str) -> List[Dict[str, Any]]:
         )
         r.raise_for_status()
         j = r.json()
-        return j.get("tweets") or []
+        return j.get("tweets") or [], True
     except Exception as e:
         log(f"  ⚠️  SocialData fetch failed: {e}")
-        return []
+        return [], False
 
 
 # -----------------------
@@ -608,7 +613,7 @@ def fetch_and_enqueue(
     queue: List[str],
     posted_list: List[str],
     tweet_data: Dict[str, Any],
-) -> Optional[datetime]:
+) -> Tuple[Optional[datetime], bool]:
     """
     Fetch tweets for all accounts using OR-query batching + global since_time.
 
@@ -627,7 +632,11 @@ def fetch_and_enqueue(
       - No granularity lost despite batching
 
     Returns:
-      max tweet datetime seen this run (caller uses it to advance checked_until_time)
+      (max_tweet_dt, all_chunks_completed)
+      - max_tweet_dt: newest tweet timestamp observed across ALL returned tweets
+        (updated before filter decisions, so reflects true API output)
+      - all_chunks_completed: True only if every chunk was fetched AND each
+        returned HTTP 200 with no exception (i.e. no early break, no API error)
     """
     posted_set     = set(posted_list)
     queued_set     = set(queue)
@@ -716,11 +725,17 @@ def fetch_and_enqueue(
     log(f"  OR-query chunks: {len(chunks)} request(s) for {len(ACCOUNTS)} account(s) "
         f"(max_per_chunk={OR_CHUNK_MAX_ACCOUNTS}, max_chars={OR_CHUNK_MAX_CHARS})")
 
-    # Track whether every chunk was fetched and processed.
-    # Used by the caller to decide whether it's safe to advance the watermark
-    # to "now" on a genuinely quiet run (all chunks returned 0 tweets).
-    # If we break early (queue full) or a chunk fails, this stays False.
+    # all_chunks_completed: True only if every chunk ran AND every request succeeded.
+    # Set to False on early queue-threshold break OR on any API failure.
+    # Used by caller to gate "advance watermark to now" on quiet runs — we must
+    # never advance the watermark if a chunk failed, because we can't confirm
+    # the window was truly empty (the failed chunk might have had tweets).
     all_chunks_completed = True
+
+    # any_tweets_returned: True if at least one chunk returned ≥1 tweet from the API.
+    # Tracked independently of max_tweet_dt so the "genuinely quiet" check in the
+    # caller remains correct even if _update_max_dt() logic changes in future.
+    any_tweets_returned = False
 
     for i, query in enumerate(chunks, 1):
         if len(queue) >= THRESHOLD:
@@ -728,8 +743,13 @@ def fetch_and_enqueue(
             all_chunks_completed = False
             break
         log(f"  Chunk {i}/{len(chunks)} ({len(query)} chars)")
-        tweets = socialdata_fetch_query(query)
-        log(f"  Chunk {i}: {len(tweets)} tweet(s) returned")
+        tweets, ok = socialdata_fetch_query(query)
+        if not ok:
+            # API error — mark incomplete so caller won't advance watermark to now
+            all_chunks_completed = False
+        if tweets:
+            any_tweets_returned = True
+        log(f"  Chunk {i}: {len(tweets)} tweet(s) returned (ok={ok})")
         process_batch(tweets)
 
     # Commit per-account stats derived from tweet authors
@@ -746,6 +766,7 @@ def fetch_and_enqueue(
         f"no_photo: {counts['no_photo']} | old: {counts['old']} | "
         f"dupe(posted/queued): {counts['posted'] + counts['queued']}"
     )
+    log(f"  all_chunks_completed={all_chunks_completed} | any_tweets_returned={any_tweets_returned}")
     if DEBUG and per_account:
         log("  Per-account this run:")
         for acct, c in sorted(per_account.items()):
@@ -990,20 +1011,23 @@ def main():
     #
     # Three cases:
     #
-    # A) Tweets were seen (max_tweet_dt is not None):
+    # A) Tweets were observed (max_tweet_dt is not None):
     #    → Use max tweet timestamp. Precise, always safe. Doesn't matter
     #      whether we finished all chunks or broke early — the watermark only
-    #      moves to what we actually observed.
+    #      moves to what we actually observed from the API.
     #
-    # B) No tweets seen AND all chunks completed:
+    # B) No tweets observed AND all chunks completed successfully AND
+    #    no chunk returned any tweets:
     #    → Genuinely quiet window (API returned 0 for every chunk, no errors).
     #      Safe to advance to now so we don't re-query this empty window forever.
+    #      all three conditions must hold — any_tweets_returned guards against
+    #      a future change where max_tweet_dt logic is modified.
     #
-    # C) No tweets seen BUT not all chunks completed (early break or API error):
-    #    → We can't confirm the window was truly empty. Keep the previous
-    #      watermark unchanged. The overlap will re-cover this window next run.
-    #      This is the key fix — the old code advanced to "now" here, which
-    #      could permanently skip tweets in chunks we never fetched.
+    # C) Anything else (early break, API failure, or uncertain state):
+    #    → Keep the previous watermark unchanged. The overlap will re-cover
+    #      this window next run. This is the critical fix — the old code advanced
+    #      to "now" here, which could permanently skip tweets in chunks we never
+    #      fetched or chunks that silently failed.
     #
     prev_watermark = state.get("checked_until_time") or state.get("start_time")
 
@@ -1012,13 +1036,13 @@ def main():
         state["checked_until_time"] = max_tweet_dt.isoformat()
         log(f"  ✅ checked_until_time → {state['checked_until_time']} (max tweet observed)")
     elif all_chunks_completed:
-        # Case B — genuinely quiet, advance to now
+        # Case B — confirmed quiet: every chunk ran, every request succeeded, 0 tweets total
         state["checked_until_time"] = utc_now_iso()
-        log(f"  ℹ️  All chunks fetched, 0 tweets — watermark advanced to now: {state['checked_until_time']}")
+        log(f"  ℹ️  All chunks OK, 0 tweets — watermark advanced to now: {state['checked_until_time']}")
     else:
-        # Case C — incomplete run, keep prev watermark to avoid skipping tweets
+        # Case C — incomplete or uncertain run, keep prev watermark
         state["checked_until_time"] = prev_watermark
-        log(f"  ⚠️  Incomplete fetch (early break or error) — watermark unchanged: {prev_watermark}")
+        log(f"  ⚠️  Incomplete/uncertain fetch — watermark unchanged: {prev_watermark}")
 
     queue[:] = sort_queue_oldest_first(queue, tweet_data)
     log(f"Queue: {len(queue)}/{THRESHOLD}")
