@@ -686,7 +686,13 @@ def fetch_and_enqueue(
     def process_batch(tweets: List[Dict[str, Any]]) -> None:
         queue_full = False
     
-        for t in tweets:
+        tweets_sorted = sorted(
+            tweets,
+            key=lambda t: parse_dt(extract_tweet_time(t) or "1970-01-01T00:00:00+00:00"),
+            reverse=True  # newest first
+        )
+        
+        for t in tweets_sorted:
             # Always update watermark for every returned tweet
             _update_max_dt(t)
     
