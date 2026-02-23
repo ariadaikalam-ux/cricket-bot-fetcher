@@ -25,7 +25,7 @@ TWITTER_ACCOUNTS = os.environ.get(
 )
 ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
-THRESHOLD = int(os.environ.get("TWEET_THRESHOLD", "10"))
+THRESHOLD = random.randint(7, 10)
 DRY_RUN   = os.environ.get("DRY_RUN", "0") == "1"
 DEBUG     = os.environ.get("DEBUG", "0") == "1"
 SHOW_STATS = os.environ.get("SHOW_STATS", "0") == "1"
