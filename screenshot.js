@@ -88,11 +88,11 @@ async function preparePage(page) {
   await page.route("**/*", (route) => {
     const url = route.request().url();
     if (url.match(/\.(woff|woff2|ttf|otf)(\?|$)/i)) {
-  // Allow Twitter's own Chirp font, block everything else
-  if (!url.includes("abs.twimg.com") && !url.includes("ton.twimg.com")) {
-    return route.abort();
-  }
-}
+      // Allow Twitter's own Chirp font, block everything else
+      if (!url.includes("abs.twimg.com") && !url.includes("ton.twimg.com")) {
+        return route.abort();
+      }
+    }
     if (url.includes("doubleclick") || url.includes("googletagmanager") ||
         url.includes("google-analytics") || url.includes("analytics")) return route.abort();
     return route.continue();
@@ -138,21 +138,20 @@ async function forceWhiteCss(page) {
         height: 64px !important;
         min-width: 64px !important;
         min-height: 64px !important;
-        flex-shrink: 0 !important;      /* ← stops it squishing into name */
+        flex-shrink: 0 !important;
       }
       [data-testid="Tweet-User-Avatar"] img,
       [data-testid^="UserAvatar-Container"] img {
-        width: 64px !important;         /* ← match container, was wrongly 88px */
+        width: 64px !important;
         height: 64px !important;
         border-radius: 50% !important;
       }
 
       /* ── BRANDING: name size + position ── */
       [data-testid="User-Name"] {
-        font-size: 1em !important;      /* reset the broken 4.2em */
-        margin-left: 16px !important;    /* push name away from avatar */
+        font-size: 1em !important;
+        margin-left: 16px !important;
       }
-      /* Target the actual display name text directly in px */
       [data-testid="User-Name"] a span,
       [data-testid="User-Name"] div > span {
         font-size: 20px !important;
@@ -163,9 +162,8 @@ async function forceWhiteCss(page) {
       [data-testid="caret"] {
         display: none !important;
       }
-      /* Gap between author header and tweet body */
       [data-testid="tweetText"] {
-        margin-top: 16px !important;   /* add this line, keep your existing font-size/line-height */
+        margin-top: 16px !important;
         display: -webkit-box !important;
         -webkit-line-clamp: 9 !important;
         -webkit-box-orient: vertical !important;
@@ -186,6 +184,7 @@ async function waitForTweetContent(page) {
   throw new Error("Tweet selector not found");
 }
 
+// ── CHANGED: removed waitForTimeout(300) ─────────────────────────────
 async function customizeAuthor(page) {
   await page.evaluate(({ name, username }) => {
     const nameSpans = document.querySelectorAll('[data-testid="User-Name"] span');
@@ -194,9 +193,9 @@ async function customizeAuthor(page) {
       if (span.textContent.trim().startsWith("@")) { span.textContent = username; break; }
     }
   }, { name: MY_NAME, username: MY_USERNAME });
-  await page.waitForTimeout(300);
 }
 
+// ── CHANGED: removed waitForTimeout(200) ─────────────────────────────
 async function replaceProfilePic(page) {
   if (!MY_PHOTO_B64) return;
   await page.evaluate((b64) => {
@@ -214,94 +213,7 @@ async function replaceProfilePic(page) {
       }
     }
   }, MY_PHOTO_B64);
-  await page.waitForTimeout(200);
 }
-
-
-// ── Find crop region ──────────────────────────────────────────────────
-async function findCropRegion(page) {
-  return await page.evaluate(() => {
-    const tweet = document.querySelector('[data-testid="tweet"]') || document.querySelector("article");
-    if (!tweet) return null;
-
-    const tweetRect = tweet.getBoundingClientRect();
-
-    // ── TOP: avatar element top ───────────────────────────────────────
-    let contentTop = tweetRect.top;
-    for (const sel of ['[data-testid="Tweet-User-Avatar"]', '[data-testid^="UserAvatar-Container"]']) {
-      const el = tweet.querySelector(sel);
-      if (el) {
-        const r = el.getBoundingClientRect();
-        if (r.top > 0 && r.height > 0) { contentTop = r.top; break; }
-      }
-    }
-    if (contentTop === tweetRect.top) {
-      let minTop = Infinity;
-      const walk = (el) => {
-        if (!el || el.nodeType !== 1) return;
-        const r = el.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0 && r.top < minTop) minTop = r.top;
-        for (const c of el.children) walk(c);
-      };
-      walk(tweet);
-      if (minTop < Infinity) contentTop = minTop;
-    }
-
-    // ── BOTTOM: metrics start ─────────────────────────────────────────
-    let metricsTop = null;
-
-    const timeEl = tweet.querySelector("time");
-    if (timeEl) {
-      let row = timeEl;
-      for (let i = 0; i < 6; i++) { const p = row.parentElement; if (!p || p === tweet) break; row = p; }
-      const r = row.getBoundingClientRect();
-      if (r.top > tweetRect.top && r.height > 0) metricsTop = r.top;
-    }
-
-    if (metricsTop === null) {
-      for (const g of tweet.querySelectorAll('[role="group"]')) {
-        if (g.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"]')) {
-          const r = g.getBoundingClientRect();
-          if (r.top > tweetRect.top && r.height > 0) { metricsTop = r.top; break; }
-        }
-      }
-    }
-
-    if (metricsTop === null) {
-      const a = tweet.querySelector('[data-testid="analyticsButton"], a[href$="/analytics"]');
-      if (a) {
-        let row = a;
-        for (let i = 0; i < 5; i++) { const p = row.parentElement; if (!p || p === tweet) break; row = p; }
-        const r = row.getBoundingClientRect();
-        if (r.top > tweetRect.top) metricsTop = r.top;
-      }
-    }
-
-    if (metricsTop === null) {
-      for (const el of tweet.querySelectorAll("*")) {
-        if (el.children.length > 0) continue;
-        const txt = (el.innerText || el.textContent || "").trim();
-        if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(txt)) {
-          let row = el;
-          for (let i = 0; i < 6; i++) { const p = row.parentElement; if (!p || p === tweet) break; row = p; }
-          const r = row.getBoundingClientRect();
-          if (r.top > tweetRect.top && r.height > 0) { metricsTop = r.top; break; }
-        }
-      }
-    }
-
-    const cropBottom = metricsTop !== null ? metricsTop - 2 : tweetRect.bottom;
-
-    return {
-      x: tweetRect.left,
-      y: contentTop,
-      width: tweetRect.width,
-      cropBottom,
-      metricsFound: metricsTop !== null,
-    };
-  });
-}
-// ─────────────────────────────────────────────────────────────────────
 
 function buildCanvasHtml(rawB64) {
   return `<!doctype html><html><head><meta charset="utf-8"/>
@@ -317,7 +229,7 @@ function buildCanvasHtml(rawB64) {
 
 async function captureAndCompose(page, context, pngOut) {
   const tweetEl = await page.locator('[data-testid="tweet"]').first();
-  const box = await tweetEl.boundingBox(); // CSS pixels
+  const box = await tweetEl.boundingBox();
   if (!box) throw new Error("Could not find tweet bounding box");
 
   const metricsY = await page.evaluate(() => {
@@ -341,15 +253,11 @@ async function captureAndCompose(page, context, pngOut) {
     return null;
   });
 
-  // CSS px → physical px
-  const dpr = 3;
   const cropBottomCss = metricsY !== null ? (metricsY - box.y) : box.height;
-
   log(`  metricsY=${metricsY?.toFixed(0) ?? 'null'} | box.y=${box.y.toFixed(0)} | cropBottomCss=${cropBottomCss.toFixed(0)}`);
 
   const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
-  // Use page.screenshot with CSS pixel clip (Playwright auto-applies DPR)
   await page.screenshot({
     path: rawPath,
     type: "png",
@@ -357,7 +265,7 @@ async function captureAndCompose(page, context, pngOut) {
       x: box.x,
       y: box.y,
       width: box.width,
-      height: Math.max(50, cropBottomCss),  // CSS pixels — Playwright handles DPR
+      height: Math.max(50, cropBottomCss),
     },
   });
 
@@ -366,22 +274,30 @@ async function captureAndCompose(page, context, pngOut) {
   const rawB64 = fs.readFileSync(rawPath).toString("base64");
   const page2 = await context.newPage();
   await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
+  // ── CHANGED: removed waitForTimeout(80) — waitUntil:"load" is sufficient
   await page2.setContent(buildCanvasHtml(rawB64), { waitUntil: "load" });
-  await page2.waitForTimeout(80);
   await page2.screenshot({ path: pngOut, type: "png" });
   await page2.close();
   try { fs.unlinkSync(rawPath); } catch (_) {}
 }
+
+// ── CHANGED: replaced blind 2500+300ms sleeps with smart image-load wait ──
 async function loadTweet(page, tweetUrl) {
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await waitForTweetContent(page);
   await forceWhiteCss(page);
-  await page.waitForTimeout(2500);
+
+  // Wait for tweet images to actually finish loading instead of sleeping
+  await page.waitForFunction(() => {
+    const imgs = Array.from(document.querySelectorAll('[data-testid="tweetPhoto"] img'));
+    if (!imgs.length) return true; // text-only tweet, nothing to wait for
+    return imgs.every(img => img.complete && img.naturalWidth > 0);
+  }, { timeout: 10000 }).catch(() => {}); // soft timeout — don't fail if slow
+
   await customizeAuthor(page);
   await replaceProfilePic(page);
-  // NO dedupMediaOnly — element screenshot handles this naturally
-  await page.waitForTimeout(300);
 }
+
 async function renderOne(page, context, tweetObj, outPath) {
   const tweetUrl = buildTweetUrlFromJson(tweetObj);
   if (!tweetUrl) return { ok: false, reason: "missing_url_fields" };
