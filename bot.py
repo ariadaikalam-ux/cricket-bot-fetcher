@@ -21,11 +21,11 @@ IMGUR_CLIENT_ID    = os.environ.get("IMGUR_CLIENT_ID", "")
 
 TWITTER_ACCOUNTS = os.environ.get(
     "TWITTER_ACCOUNTS",
-    "mufaddal_vohra,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar"
+    "mufaddal_vohra,cricketgyann,wxtreme18,rcbtweets,chennaiipl,ctrlmemes_,mipaltan,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar,gemsofcricket,mohalimonster,mahi_patel_07,1no_aalsi_,vipintiwari952,justtalkcricket,vikrant_1589,selflesscricket"
 )
 ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
-THRESHOLD  = random.randint(7, 10)
+THRESHOLD = int(os.environ.get("THRESHOLD", "9"))
 DRY_RUN    = os.environ.get("DRY_RUN", "0") == "1"
 DEBUG      = os.environ.get("DEBUG", "0") == "1"
 SHOW_STATS = os.environ.get("SHOW_STATS", "0") == "1"
@@ -613,6 +613,7 @@ def fetch_and_enqueue(
     queue: List[str],
     posted_list: List[str],
     tweet_data: Dict[str, Any],
+    accounts: List[str],
 ) -> Tuple[Optional[datetime], bool, bool]:
     """
     Fetch tweets for all accounts using OR-query batching + global since_time.
@@ -764,7 +765,7 @@ def fetch_and_enqueue(
                 else:
                     counts[reason] = counts.get(reason, 0) + 1
     # Build OR-query chunks from the full account list
-    chunks = build_or_query_chunks(ACCOUNTS, since_unix)
+    chunks = build_or_query_chunks(accounts, since_unix)
     log(f"  OR-query chunks: {len(chunks)} request(s) for {len(ACCOUNTS)} account(s) "
         f"(max_per_chunk={OR_CHUNK_MAX_ACCOUNTS}, max_chars={OR_CHUNK_MAX_CHARS})")
 
@@ -1051,8 +1052,10 @@ def main():
 
     # ── 1) Fetch + filter ──────────────────────────────────────────────────
     with StageTimer("1) Fetch & filter (OR-query batches)"):
+        accounts_for_run = ACCOUNTS[:]
+        random.shuffle(accounts_for_run)
         max_tweet_dt, all_chunks_completed, any_tweets_returned = fetch_and_enqueue(
-            state, cutoff_dt, queue, posted_list, tweet_data
+            state, cutoff_dt, queue, posted_list, tweet_data, accounts_for_run
         )
 
     # ── Advance checked_until_time (safe watermark logic) ──────────────────
@@ -1227,7 +1230,7 @@ def main():
     # ── 8) Publish ─────────────────────────────────────────────────────────
     with StageTimer("7) Publish"):
         JITTER = float(os.environ.get("PUBLISH_JITTER", "8.37"))  # +/- seconds
-        wait = max(5.0, SLEEP_BEFORE_PUBLISH + random.uniform(-JITTER, JITTER))
+        wait = SLEEP_BEFORE_PUBLISH + random.uniform(0, JITTER)
         log(f"⏳ Waiting {wait:.1f}s before publish...")
         time.sleep(wait)
         
@@ -1240,7 +1243,7 @@ def main():
         bound_state(state)
         save_state(state)
 
-        post_id = ig_publish_with_backoff(car_id, max_attempts=1)
+        #post_id = ig_publish_with_backoff(car_id, max_attempts=1)
 
         if not post_id:
             log(f"⏳ All attempts failed. Waiting {VERIFY_WAIT}s then verifying...")
