@@ -53,12 +53,11 @@ jobs:
           IG_USER_ID:          ${{ secrets.IG_USER_ID }}
           IG_ACCESS_TOKEN:     ${{ secrets.IG_ACCESS_TOKEN }}
           IMGUR_CLIENT_ID:     ${{ secrets.IMGUR_CLIENT_ID }}
-          TWITTER_ACCOUNTS:    ${{ vars.TWITTER_ACCOUNTS }}
-          TWEET_THRESHOLD:     ${{ vars.TWEET_THRESHOLD }}
-          DRY_RUN:             ${{ vars.DRY_RUN }}
-          DEBUG:               ${{ vars.DEBUG }}
-          INSTAGRAM_CAPTION_0: ${{ vars.INSTAGRAM_CAPTION_0 }}
-          INSTAGRAM_CAPTION_1: ${{ vars.INSTAGRAM_CAPTION_1 }}
+          TWITTER_ACCOUNTS: "mufaddal_vohra,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar"
+          TWEET_THRESHOLD: "10"
+          DRY_RUN: "0"
+          DEBUG: "1"
+          SHOW_STATS: "0"
         run: python bot.py
 
       # Commit state.json and twscrape_accounts.db back to repo
