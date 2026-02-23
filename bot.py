@@ -703,7 +703,8 @@ def fetch_and_enqueue(
             _update_max_dt(t)
     
         # If queue already full, do nothing else (watermark already updated)
-        if len(queue) >= THRESHOLD:
+        if DEBUG and len(queue) >= THRESHOLD:
+            log(f"  [STOP] threshold reached while processing @{author}")
             return
     
         # --- Helpers ---
@@ -729,7 +730,11 @@ def fetch_and_enqueue(
             by_author.keys(),
             key=lambda a: (-len(by_author[a]), -tweet_dt(by_author[a][0]).timestamp(), a)
         )
-    
+        if DEBUG:
+            log("  Author priority order (count, newest):")
+            for a in authors_sorted[:10]:
+                newest = extract_tweet_time(by_author[a][0]) or "?"
+                log(f"    @{a}: n={len(by_author[a])} newest={newest}")
         # --- 4) Enqueue author-by-author until THRESHOLD ---
         for author in authors_sorted:
             for t in by_author[author]:
@@ -750,7 +755,8 @@ def fetch_and_enqueue(
                     counts["seen"] += 1
                 inc(author, "evaluated")
     
-                if ok:
+                if DEBUG and ok:
+                    log(f"  [ADD] @{author} tid={tid}")
                     h = t.get("_simhash64")
                     if isinstance(h, int) and h != 0:
                         content_hashes.add(h)
@@ -1030,7 +1036,6 @@ def cleanup_screenshots(tweet_ids: List[str]) -> None:
                 except Exception:
                     pass
 
-
 # -----------------------
 # Main
 # -----------------------
@@ -1261,25 +1266,11 @@ def main():
         for i, url in enumerate(public_urls, 1):
             log(f"  ▶ ig container {i}/{len(public_urls)}")
             cid = ig_create_image_container(url)
-            if not cid:
-                log("  ⚠️  IG container create failed")
-                continue
-    
-            dbg(f"  container_id: {cid}")
-    
-            # ✅ Wait until the container is FINISHED
-            ok = ig_wait_until_ready(
-                cid,
-                timeout_s=int(os.environ.get("IG_CONTAINER_TIMEOUT_S", "180")),
-                poll_s=float(os.environ.get("IG_CONTAINER_POLL_S", "3")),
-                label="image_container",
-            )
-            if ok:
+            if cid:
                 container_ids.append(cid)
+                dbg(f"  container_id: {cid}")
             else:
-                log("  ⚠️  container not ready, skipping this image")
-    
-            # keep a little jitter (optional)
+                log("  ⚠️  IG container failed")
             time.sleep(random.uniform(SLEEP_IG_CONTAINER_MIN, SLEEP_IG_CONTAINER_MAX))
 
     log(f"IG containers ok: {len(container_ids)}/{len(public_urls)}")
@@ -1296,17 +1287,6 @@ def main():
             log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
             return
         log(f"✅ Carousel id: {car_id}")
-    
-        # ✅ Wait for carousel readiness
-        if not ig_wait_until_ready(
-            car_id,
-            timeout_s=int(os.environ.get("IG_CAROUSEL_TIMEOUT_S", "240")),
-            poll_s=float(os.environ.get("IG_CAROUSEL_POLL_S", "3")),
-            label="carousel_container",
-        ):
-            log("❌ Carousel container not ready. Keeping queue. Exiting.")
-            log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
-            return
 
     # ── 8) Publish ─────────────────────────────────────────────────────────
     with StageTimer("7) Publish"):
