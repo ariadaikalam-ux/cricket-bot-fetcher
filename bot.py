@@ -613,7 +613,7 @@ def fetch_and_enqueue(
     queue: List[str],
     posted_list: List[str],
     tweet_data: Dict[str, Any],
-) -> Tuple[Optional[datetime], bool]:
+) -> Tuple[Optional[datetime], bool, bool]:
     """
     Fetch tweets for all accounts using OR-query batching + global since_time.
 
@@ -684,29 +684,34 @@ def fetch_and_enqueue(
                 pass
 
     def process_batch(tweets: List[Dict[str, Any]]) -> None:
+        queue_full = False
+    
         for t in tweets:
-            # Update watermark FIRST, before any filter check.
-            # Even tweets that are seen/queued/posted prove the API returned
-            # data up to their timestamp — that should move the watermark forward.
+            # Always update watermark for every returned tweet
             _update_max_dt(t)
-
+    
+            # If queue is already full, don't evaluate/enqueue,
+            # but keep scanning to capture the newest timestamp.
+            if queue_full:
+                continue
+    
             if len(queue) >= THRESHOLD:
-                # Stop enqueuing — watermark already captured above.
-                break
-
+                queue_full = True
+                continue
+    
             tid    = str(t.get("id_str") or t.get("id") or "")
             author = (extract_tweet_author(t) or "unknown")
             inc(author, "fetched")
-
+    
             ok, reason = passes_filters(
                 t, cutoff_dt, posted_set, queued_set, seen_set, content_hashes
             )
-
+    
             if tid:
                 seen_set.add(tid)
                 counts["seen"] += 1
             inc(author, "evaluated")
-
+    
             if ok:
                 h = t.get("_simhash64")
                 if isinstance(h, int) and h != 0:
@@ -719,7 +724,6 @@ def fetch_and_enqueue(
                 inc(author, "good")
             else:
                 counts[reason] = counts.get(reason, 0) + 1
-
     # Build OR-query chunks from the full account list
     chunks = build_or_query_chunks(ACCOUNTS, since_unix)
     log(f"  OR-query chunks: {len(chunks)} request(s) for {len(ACCOUNTS)} account(s) "
@@ -772,7 +776,7 @@ def fetch_and_enqueue(
         for acct, c in sorted(per_account.items()):
             log(f"    @{acct}: fetched={c['fetched']} evaluated={c['evaluated']} good={c['good']}")
 
-    return max_tweet_dt, all_chunks_completed
+    return max_tweet_dt, all_chunks_completed, any_tweets_returned
 
 
 # -----------------------
@@ -1003,7 +1007,7 @@ def main():
 
     # ── 1) Fetch + filter ──────────────────────────────────────────────────
     with StageTimer("1) Fetch & filter (OR-query batches)"):
-        max_tweet_dt, all_chunks_completed = fetch_and_enqueue(
+        max_tweet_dt, all_chunks_completed, any_tweets_returned = fetch_and_enqueue(
             state, cutoff_dt, queue, posted_list, tweet_data
         )
 
@@ -1035,7 +1039,7 @@ def main():
         # Case A — always safe
         state["checked_until_time"] = max_tweet_dt.isoformat()
         log(f"  ✅ checked_until_time → {state['checked_until_time']} (max tweet observed)")
-    elif all_chunks_completed:
+    elif all_chunks_completed and (not any_tweets_returned):
         # Case B — confirmed quiet: every chunk ran, every request succeeded, 0 tweets total
         state["checked_until_time"] = utc_now_iso()
         log(f"  ℹ️  All chunks OK, 0 tweets — watermark advanced to now: {state['checked_until_time']}")
