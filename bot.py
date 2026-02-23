@@ -49,6 +49,7 @@ BASE_DIR          = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE        = os.path.join(BASE_DIR, "state.json")
 SCREENSHOT_DIR    = os.path.join(BASE_DIR, "screenshots")
 SCREENSHOT_SCRIPT = os.path.join(BASE_DIR, "screenshot.js")
+QUEUE_MAX_AGE_HOURS = float(os.environ.get("QUEUE_MAX_AGE_HOURS", "6"))
 
 SESSION = requests.Session()
 RETRY_STATUSES = {429, 500, 502, 503, 504}
@@ -355,7 +356,31 @@ def recover_in_flight(state: Dict[str, Any]) -> None:
     state["queue"] = [str(x) for x in state["queue"] if str(x) not in inflight_set]
     state["in_flight"] = []
 
+def evict_stale_queue(state: Dict[str, Any], tweet_data: Dict[str, Any], max_age_hours: float = 8.0) -> None:
+    """Remove tweets from the queue that are older than max_age_hours."""
+    now = datetime.now(timezone.utc)
+    fresh = []
+    evicted = 0
 
+    for tid in state["queue"]:
+        t = tweet_data.get(tid, {})
+        ts = extract_tweet_time(t)
+        if not ts:
+            fresh.append(tid)  # no timestamp → keep (safe default)
+            continue
+        try:
+            age_hours = (now - parse_dt(ts)).total_seconds() / 3600
+            if age_hours <= max_age_hours:
+                fresh.append(tid)
+            else:
+                evicted += 1
+                dbg(f"  evicted stale: {tid} age={age_hours:.1f}h")
+        except Exception:
+            fresh.append(tid)  # bad parse → keep
+
+    state["queue"] = fresh
+    if evicted:
+        log(f"  🗑️  Evicted {evicted} stale tweet(s) from queue (older than {max_age_hours}h)")
 # -----------------------
 # Caption rotation
 # -----------------------
@@ -805,6 +830,7 @@ def main():
     state = load_state()
     recover_in_flight(state)
     bound_state(state)
+    evict_stale_queue(state, state.get("tweet_data", {}), max_age_hours=QUEUE_MAX_AGE_HOURS)
     save_state(state)
 
     state["total_runs"] = int(state.get("total_runs", 0)) + 1
