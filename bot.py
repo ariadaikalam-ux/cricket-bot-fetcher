@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 import requests
 import re
-
+from collections import defaultdict
 import hashlib
 
 # -----------------------
@@ -37,9 +37,9 @@ CAPTIONS = [
 ]
 
 # Tuning
-SLEEP_IG_CONTAINER_MIN = float(os.environ.get("SLEEP_IG_CONTAINER_MIN", "1"))
-SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "2"))
-SLEEP_BEFORE_PUBLISH   = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "5.0"))
+SLEEP_IG_CONTAINER_MIN = float(os.environ.get("SLEEP_IG_CONTAINER_MIN", "2.5"))
+SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "5.5"))
+SLEEP_BEFORE_PUBLISH   = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "15.0"))
 SLEEP_IMGUR            = float(os.environ.get("SLEEP_IMGUR", "0.5"))
 VERIFY_WAIT            = float(os.environ.get("VERIFY_WAIT", "8.0"))
 VERIFY_WINDOW          = int(os.environ.get("VERIFY_WINDOW", "600"))
@@ -683,53 +683,86 @@ def fetch_and_enqueue(
             except Exception:
                 pass
 
-    def process_batch(tweets: List[Dict[str, Any]]) -> None:
-        queue_full = False
-    
-        tweets_sorted = sorted(
-            tweets,
-            key=lambda t: parse_dt(extract_tweet_time(t) or "1970-01-01T00:00:00+00:00"),
-            reverse=True  # newest first
-        )
         
-        for t in tweets_sorted:
-            # Always update watermark for every returned tweet
+    def process_batch(tweets: List[Dict[str, Any]]) -> None:
+        """
+        New enqueue logic:
+          - group by author
+          - tweets within author: newest -> oldest
+          - authors sorted by tweet count desc
+          - enqueue author1 fully, then author2, ...
+          - stop when THRESHOLD reached
+    
+        Watermark behavior preserved:
+          - _update_max_dt(t) is called for EVERY returned tweet (even if queue is full).
+        """
+    
+        # --- Always update watermark from ALL tweets returned ---
+        for t in tweets:
             _update_max_dt(t)
     
-            # If queue is already full, don't evaluate/enqueue,
-            # but keep scanning to capture the newest timestamp.
-            if queue_full:
-                continue
+        # If queue already full, do nothing else (watermark already updated)
+        if len(queue) >= THRESHOLD:
+            return
     
-            if len(queue) >= THRESHOLD:
-                queue_full = True
-                continue
+        # --- Helpers ---
+        def tweet_dt(t: Dict[str, Any]) -> datetime:
+            ts = extract_tweet_time(t) or "1970-01-01T00:00:00+00:00"
+            try:
+                return parse_dt(ts)
+            except Exception:
+                return datetime.min.replace(tzinfo=timezone.utc)
     
-            tid    = str(t.get("id_str") or t.get("id") or "")
+        # --- 1) Group tweets by author ---
+        by_author: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        for t in tweets:
             author = (extract_tweet_author(t) or "unknown")
-            inc(author, "fetched")
+            by_author[author].append(t)
     
-            ok, reason = passes_filters(
-                t, cutoff_dt, posted_set, queued_set, seen_set, content_hashes
-            )
+        # --- 2) Sort tweets within each author newest -> oldest ---
+        for author, lst in by_author.items():
+            lst.sort(key=tweet_dt, reverse=True)
     
-            if tid:
-                seen_set.add(tid)
-                counts["seen"] += 1
-            inc(author, "evaluated")
+        # --- 3) Sort authors by tweet count desc (tie-breaker: newest tweet, then handle) ---
+        authors_sorted = sorted(
+            by_author.keys(),
+            key=lambda a: (-len(by_author[a]), -tweet_dt(by_author[a][0]).timestamp(), a)
+        )
     
-            if ok:
-                h = t.get("_simhash64")
-                if isinstance(h, int) and h != 0:
-                    content_hashes.add(h)
-                counts["added"] += 1
-                queue.append(tid)
-                queued_set.add(tid)
-                t.pop("_simhash64", None)
-                tweet_data[tid] = t
-                inc(author, "good")
-            else:
-                counts[reason] = counts.get(reason, 0) + 1
+        # --- 4) Enqueue author-by-author until THRESHOLD ---
+        for author in authors_sorted:
+            for t in by_author[author]:
+                if len(queue) >= THRESHOLD:
+                    return
+    
+                tid = str(t.get("id_str") or t.get("id") or "")
+    
+                # per-account stats (based on author from tweet object)
+                inc(author, "fetched")
+    
+                ok, reason = passes_filters(
+                    t, cutoff_dt, posted_set, queued_set, seen_set, content_hashes
+                )
+    
+                if tid:
+                    seen_set.add(tid)
+                    counts["seen"] += 1
+                inc(author, "evaluated")
+    
+                if ok:
+                    h = t.get("_simhash64")
+                    if isinstance(h, int) and h != 0:
+                        content_hashes.add(h)
+    
+                    counts["added"] += 1
+                    queue.append(tid)
+                    queued_set.add(tid)
+    
+                    t.pop("_simhash64", None)
+                    tweet_data[tid] = t
+                    inc(author, "good")
+                else:
+                    counts[reason] = counts.get(reason, 0) + 1
     # Build OR-query chunks from the full account list
     chunks = build_or_query_chunks(ACCOUNTS, since_unix)
     log(f"  OR-query chunks: {len(chunks)} request(s) for {len(ACCOUNTS)} account(s) "
@@ -947,6 +980,11 @@ def cleanup_screenshots(tweet_ids: List[str]) -> None:
 def main():
     total_t0 = perf_counter()
     log("=== cricket-bot starting ===")
+    # Run-level jitter to avoid exact cron timing fingerprints
+    max_jitter = int(os.environ.get("RUN_JITTER_SECONDS", "8.67"))  # 0–20 min
+    j = random.randint(0, max_jitter)
+    log(f"⏳ Run jitter: sleeping {j}s...")
+    time.sleep(j)
     log(f"Accounts: {','.join(ACCOUNTS)}")
     log(f"Threshold: {THRESHOLD} | DRY_RUN: {int(DRY_RUN)} | DEBUG: {int(DEBUG)}")
     log(f"OR_CHUNK: max_accounts={OR_CHUNK_MAX_ACCOUNTS} max_chars={OR_CHUNK_MAX_CHARS} | "
@@ -1188,9 +1226,11 @@ def main():
 
     # ── 8) Publish ─────────────────────────────────────────────────────────
     with StageTimer("7) Publish"):
-        log(f"⏳ Waiting {SLEEP_BEFORE_PUBLISH}s...")
-        time.sleep(SLEEP_BEFORE_PUBLISH)
-
+        JITTER = float(os.environ.get("PUBLISH_JITTER", "8.37"))  # +/- seconds
+        wait = max(5.0, SLEEP_BEFORE_PUBLISH + random.uniform(-JITTER, JITTER))
+        log(f"⏳ Waiting {wait:.1f}s before publish...")
+        time.sleep(wait)
+        
         if DRY_RUN:
             log("🧪 DRY_RUN=1 → Skipping publish.")
             log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
