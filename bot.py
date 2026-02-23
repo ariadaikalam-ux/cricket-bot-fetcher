@@ -1244,7 +1244,7 @@ def main():
         save_state(state)
 
         #post_id = ig_publish_with_backoff(car_id, max_attempts=1)
-
+        post_id = None
         if not post_id:
             log(f"⏳ All attempts failed. Waiting {VERIFY_WAIT}s then verifying...")
             time.sleep(VERIFY_WAIT)
