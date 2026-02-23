@@ -766,7 +766,7 @@ def fetch_and_enqueue(
                     counts[reason] = counts.get(reason, 0) + 1
     # Build OR-query chunks from the full account list
     chunks = build_or_query_chunks(accounts, since_unix)
-    log(f"  OR-query chunks: {len(chunks)} request(s) for {len(ACCOUNTS)} account(s) "
+    log(f"  OR-query chunks: {len(chunks)} request(s) for {len(accounts)} account(s) "
         f"(max_per_chunk={OR_CHUNK_MAX_ACCOUNTS}, max_chars={OR_CHUNK_MAX_CHARS})")
 
     # all_chunks_completed: True only if every chunk ran AND every request succeeded.
@@ -960,7 +960,63 @@ def ig_verify_publish(
     log("  ❌ Both checks FAILED — post did not go through.")
     return None
 
+def ig_get_status(creation_id: str) -> Tuple[Optional[str], Optional[dict]]:
+    """
+    Returns (status_code, full_json).
+    status_code could be: IN_PROGRESS, FINISHED, ERROR, EXPIRED (and sometimes PROCESSING).
+    """
+    try:
+        r = request_with_retry(
+            "GET",
+            f"https://graph.facebook.com/v21.0/{creation_id}",
+            params={"fields": "status_code,status,error", "access_token": IG_ACCESS_TOKEN},
+            timeout=30,
+            tries=3
+        )
+        j = r.json()
+        if "error" in j:
+            return None, j
+        return (j.get("status_code") or j.get("status")), j
+    except Exception as e:
+        return None, {"exception": str(e)}
 
+
+def ig_wait_until_ready(
+    creation_id: str,
+    *,
+    timeout_s: int = 180,
+    poll_s: float = 3.0,
+    label: str = "container",
+) -> bool:
+    """
+    Poll until container status becomes FINISHED.
+    Return False if ERROR/EXPIRED or timeout.
+    """
+    t0 = time.time()
+    while True:
+        status, raw = ig_get_status(creation_id)
+
+        if status:
+            status_u = str(status).upper()
+            dbg(f"{label} {creation_id} status={status_u}")
+
+            if status_u == "FINISHED":
+                log(f"  ✅ {label} ready: {creation_id}")
+                return True
+
+            if status_u in ("ERROR", "EXPIRED"):
+                log(f"  ❌ {label} failed: {creation_id} status={status_u}")
+                dbg(f"  raw: {raw}")
+                return False
+        else:
+            log(f"  ⚠️  status check failed for {label} {creation_id}")
+            dbg(f"  raw: {raw}")
+
+        if time.time() - t0 > timeout_s:
+            log(f"  ❌ timeout waiting for {label} {creation_id} ({timeout_s}s)")
+            return False
+
+        time.sleep(poll_s)
 # -----------------------
 # Cleanup
 # -----------------------
@@ -983,7 +1039,7 @@ def main():
     log("=== cricket-bot starting ===")
     # Run-level jitter to avoid exact cron timing fingerprints
     max_jitter = float(os.environ.get("RUN_JITTER_SECONDS", "8.67"))
-    j = random.randint(0, max_jitter)
+    j = random.uniform(0, max_jitter)
     log(f"⏳ Run jitter: sleeping {j}s...")
     time.sleep(j)
     log(f"Accounts: {','.join(ACCOUNTS)}")
@@ -1205,11 +1261,25 @@ def main():
         for i, url in enumerate(public_urls, 1):
             log(f"  ▶ ig container {i}/{len(public_urls)}")
             cid = ig_create_image_container(url)
-            if cid:
+            if not cid:
+                log("  ⚠️  IG container create failed")
+                continue
+    
+            dbg(f"  container_id: {cid}")
+    
+            # ✅ Wait until the container is FINISHED
+            ok = ig_wait_until_ready(
+                cid,
+                timeout_s=int(os.environ.get("IG_CONTAINER_TIMEOUT_S", "180")),
+                poll_s=float(os.environ.get("IG_CONTAINER_POLL_S", "3")),
+                label="image_container",
+            )
+            if ok:
                 container_ids.append(cid)
-                dbg(f"  container_id: {cid}")
             else:
-                log("  ⚠️  IG container failed")
+                log("  ⚠️  container not ready, skipping this image")
+    
+            # keep a little jitter (optional)
             time.sleep(random.uniform(SLEEP_IG_CONTAINER_MIN, SLEEP_IG_CONTAINER_MAX))
 
     log(f"IG containers ok: {len(container_ids)}/{len(public_urls)}")
@@ -1226,6 +1296,17 @@ def main():
             log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
             return
         log(f"✅ Carousel id: {car_id}")
+    
+        # ✅ Wait for carousel readiness
+        if not ig_wait_until_ready(
+            car_id,
+            timeout_s=int(os.environ.get("IG_CAROUSEL_TIMEOUT_S", "240")),
+            poll_s=float(os.environ.get("IG_CAROUSEL_POLL_S", "3")),
+            label="carousel_container",
+        ):
+            log("❌ Carousel container not ready. Keeping queue. Exiting.")
+            log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
+            return
 
     # ── 8) Publish ─────────────────────────────────────────────────────────
     with StageTimer("7) Publish"):
@@ -1243,8 +1324,8 @@ def main():
         bound_state(state)
         save_state(state)
 
-        #post_id = ig_publish_with_backoff(car_id, max_attempts=1)
-        post_id = None
+        post_id = ig_publish_with_backoff(car_id, max_attempts=1)
+        
         if not post_id:
             log(f"⏳ All attempts failed. Waiting {VERIFY_WAIT}s then verifying...")
             time.sleep(VERIFY_WAIT)
