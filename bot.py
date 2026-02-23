@@ -703,8 +703,9 @@ def fetch_and_enqueue(
             _update_max_dt(t)
     
         # If queue already full, do nothing else (watermark already updated)
-        if DEBUG and len(queue) >= THRESHOLD:
-            log(f"  [STOP] threshold reached while processing @{author}")
+        if len(queue) >= THRESHOLD:
+            if DEBUG:
+                log("  [STOP] threshold reached before processing batch")
             return
     
         # --- Helpers ---
@@ -755,8 +756,9 @@ def fetch_and_enqueue(
                     counts["seen"] += 1
                 inc(author, "evaluated")
     
-                if DEBUG and ok:
-                    log(f"  [ADD] @{author} tid={tid}")
+                if ok:
+                    if DEBUG:
+                        log(f"  [ADD] @{author} tid={tid}")
                     h = t.get("_simhash64")
                     if isinstance(h, int) and h != 0:
                         content_hashes.add(h)
