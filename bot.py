@@ -50,6 +50,8 @@ STATE_FILE        = os.path.join(BASE_DIR, "state.json")
 SCREENSHOT_DIR    = os.path.join(BASE_DIR, "screenshots")
 SCREENSHOT_SCRIPT = os.path.join(BASE_DIR, "screenshot.js")
 QUEUE_MAX_AGE_HOURS = float(os.environ.get("QUEUE_MAX_AGE_HOURS", "6"))
+ENABLE_ROUND_2 = os.environ.get("ENABLE_ROUND_2", "0") == "1"
+MAX_ACCOUNTS_PER_RUN = int(os.environ.get("MAX_ACCOUNTS_PER_RUN", "3"))
 
 SESSION = requests.Session()
 RETRY_STATUSES = {429, 500, 502, 503, 504}
@@ -303,6 +305,7 @@ def load_state() -> Dict[str, Any]:
             "first_cycle": [],
             "first_cycle_idx": 0,
             "next_start_idx": 0,
+            "account_stats": {},
         }
     with open(STATE_FILE, "r", encoding="utf-8") as f:
         s = json.load(f)
@@ -321,6 +324,8 @@ def load_state() -> Dict[str, Any]:
     s.setdefault("first_cycle", [])
     s.setdefault("first_cycle_idx", 0)
     s.setdefault("next_start_idx", 0)
+    s.setdefault("account_stats", {})
+    if not isinstance(s["account_stats"], dict):  s["account_stats"] = {}
     if not isinstance(s["in_flight"], list):  s["in_flight"] = []
     if not isinstance(s["queue"], list):      s["queue"] = []
     if not isinstance(s["posted"], list):     s["posted"] = []
@@ -381,6 +386,8 @@ def evict_stale_queue(state: Dict[str, Any], tweet_data: Dict[str, Any], max_age
     state["queue"] = fresh
     if evicted:
         log(f"  🗑️  Evicted {evicted} stale tweet(s) from queue (older than {max_age_hours}h)")
+
+
 # -----------------------
 # Caption rotation
 # -----------------------
@@ -523,6 +530,55 @@ def passes_filters(
         # only if NOT duplicate
         t["_simhash64"] = h
     return True, ""
+
+def update_account_stats(
+    state: Dict[str, Any],
+    account: str,
+    *,
+    fetched: int,
+    evaluated: int,
+    good: int
+) -> None:
+    """
+    Persist per-account counters.
+    'good' == number of tweets added to queue from this account.
+    """
+    state.setdefault("account_stats", {})
+    st = state["account_stats"].setdefault(account, {
+        "runs": 0,
+        "fetched": 0,
+        "evaluated": 0,
+        "good": 0,
+        "last_run": None,
+        "last_fetched": 0,
+        "last_evaluated": 0,
+        "last_good": 0,
+        "history": [],  # rolling last N runs
+    })
+
+    # lifetime totals
+    st["runs"] = int(st.get("runs", 0)) + 1
+    st["fetched"] = int(st.get("fetched", 0)) + int(fetched)
+    st["evaluated"] = int(st.get("evaluated", 0)) + int(evaluated)
+    st["good"] = int(st.get("good", 0)) + int(good)
+
+    # last run snapshot
+    st["last_run"] = utc_now_iso()
+    st["last_fetched"] = int(fetched)
+    st["last_evaluated"] = int(evaluated)
+    st["last_good"] = int(good)
+
+    # rolling history (keep last 50)
+    hist = st.get("history")
+    if not isinstance(hist, list):
+        hist = []
+    hist.append({
+        "ts": st["last_run"],
+        "fetched": int(fetched),
+        "evaluated": int(evaluated),
+        "good": int(good),
+    })
+    st["history"] = hist[-50:]
 # -----------------------
 # Fetch + filter + enqueue
 # -----------------------
@@ -556,9 +612,11 @@ def fetch_and_enqueue(
         "no_time": 0, "bad_time": 0, "no_id": 0, "near_dup_text": 0,
     }
 
-    def process_batch(tweets: List[Dict[str, Any]]) -> int:
+    def process_batch(tweets: List[Dict[str, Any]]) -> Tuple[int, int]:
         
         n = 0
+        good = 0
+        evaluated = 0
 
         for t in tweets:
             if len(queue) >= THRESHOLD:
@@ -573,6 +631,7 @@ def fetch_and_enqueue(
             if tid:
                 seen_set.add(tid)
                 counts["seen"] += 1
+            evaluated += 1
 
             if ok:
                 # add hash only when actually enqueuing
@@ -585,12 +644,13 @@ def fetch_and_enqueue(
                 queued_set.add(tid)
                 t.pop("_simhash64", None)
                 tweet_data[tid] = t
+                good += 1
                 
                 n += 1
             else:
                 counts[reason] = counts.get(reason, 0) + 1
 
-        return n
+        return good, evaluated
 
     # Shuffle accounts every run
     order = pick_accounts_round_robin(state, ACCOUNTS)
@@ -612,14 +672,15 @@ def fetch_and_enqueue(
         if len(queue) >= THRESHOLD:
             log(f"  ✅ Queue reached threshold ({THRESHOLD}) — stopping early after {fetched_accounts} accounts.")
             break
-
+        if fetched_accounts >= MAX_ACCOUNTS_PER_RUN:
+            log(f"  🛑 Hit MAX_ACCOUNTS_PER_RUN={MAX_ACCOUNTS_PER_RUN}. Stopping fetch early.")
+            break
         tweets, cursor = socialdata_fetch_account(account)
         cursors[account] = cursor
         fetched_accounts += 1
-
-        good = process_batch(tweets)
-        dbg(f"  @{account}: {len(tweets)} fetched → {good} good (queue now: {len(queue)})")
-
+        good, evaluated = process_batch(tweets)
+        dbg(f"  @{account}: {len(tweets)} fetched → {good} queued (evaluated={evaluated}) (queue now: {len(queue)})")
+        update_account_stats(state, account, fetched=len(tweets), evaluated=evaluated, good=good)
         if good < LOW_YIELD_THRESHOLD:
             dry_accounts.append(account)
 
@@ -629,7 +690,7 @@ def fetch_and_enqueue(
     )
 
     # Round 2: paginate only low-yield accounts
-    if len(queue) < THRESHOLD and dry_accounts:
+    if ENABLE_ROUND_2 and len(queue) < THRESHOLD and dry_accounts:
         log(f"  Round 2: paginating {len(dry_accounts)} low-yield accounts...")
 
         for account in dry_accounts:
@@ -642,11 +703,34 @@ def fetch_and_enqueue(
                 continue
 
             tweets, _ = socialdata_fetch_account(account, cursor=cursor)
-            good = process_batch(tweets)
-            dbg(f"  @{account} page 2: {len(tweets)} fetched → {good} good")
+            good2, evaluated2 = process_batch(tweets)
+            dbg(f"  @{account} page 2: {len(tweets)} fetched → {good2} queued (evaluated={evaluated2})")
+            
+            # merge page2 into stats WITHOUT counting a new "run"
+            state.setdefault("account_stats", {})
+            st = state["account_stats"].setdefault(account, {
+                "runs": 0, "fetched": 0, "evaluated": 0, "good": 0,
+                "last_run": None, "last_fetched": 0, "last_evaluated": 0, "last_good": 0,
+                "history": [],
+            })
+            
+            st["fetched"] = int(st.get("fetched", 0)) + len(tweets)
+            st["evaluated"] = int(st.get("evaluated", 0)) + evaluated2
+            st["good"] = int(st.get("good", 0)) + good2
+            
+            st["last_fetched"] = int(st.get("last_fetched", 0)) + len(tweets)
+            st["last_evaluated"] = int(st.get("last_evaluated", 0)) + evaluated2
+            st["last_good"] = int(st.get("last_good", 0)) + good2
+            # also patch the most recent history record so it reflects the combined run
+            hist = st.get("history")
+            if isinstance(hist, list) and hist:
+                hist[-1]["fetched"] = int(st.get("last_fetched", 0))
+                hist[-1]["evaluated"] = int(st.get("last_evaluated", 0))
+                hist[-1]["good"] = int(st.get("last_good", 0))
 
         log(f"  Round 2 done. Queue: {len(queue)}/{THRESHOLD}")
-
+    elif not ENABLE_ROUND_2:
+        dbg("Round 2 disabled (ENABLE_ROUND_2=0)")
     # Persist seen list
     state["seen"] = list(seen_set)
 
