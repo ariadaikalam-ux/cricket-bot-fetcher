@@ -4,7 +4,7 @@ import time
 import random
 import subprocess
 from time import perf_counter
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 import requests
 import re
@@ -25,9 +25,9 @@ TWITTER_ACCOUNTS = os.environ.get(
 )
 ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
-THRESHOLD = random.randint(7, 10)
-DRY_RUN   = os.environ.get("DRY_RUN", "0") == "1"
-DEBUG     = os.environ.get("DEBUG", "0") == "1"
+THRESHOLD  = random.randint(7, 10)
+DRY_RUN    = os.environ.get("DRY_RUN", "0") == "1"
+DEBUG      = os.environ.get("DEBUG", "0") == "1"
 SHOW_STATS = os.environ.get("SHOW_STATS", "0") == "1"
 
 # Two alternating captions
@@ -39,21 +39,43 @@ CAPTIONS = [
 # Tuning
 SLEEP_IG_CONTAINER_MIN = float(os.environ.get("SLEEP_IG_CONTAINER_MIN", "1"))
 SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "2"))
-SLEEP_BEFORE_PUBLISH = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "5.0"))
-SLEEP_IMGUR          = float(os.environ.get("SLEEP_IMGUR", "0.5"))
-VERIFY_WAIT          = float(os.environ.get("VERIFY_WAIT", "8.0"))
-VERIFY_WINDOW        = int(os.environ.get("VERIFY_WINDOW", "600"))
-DEDUP_MIN_LEN = 25          # don't dedupe very short tweets
-DEDUP_HAMMING = 7           # <= 8 means "same-ish"
-BASE_DIR          = os.path.dirname(os.path.abspath(__file__))
-STATE_FILE        = os.path.join(BASE_DIR, "state.json")
-SCREENSHOT_DIR    = os.path.join(BASE_DIR, "screenshots")
-SCREENSHOT_SCRIPT = os.path.join(BASE_DIR, "screenshot.js")
-QUEUE_MAX_AGE_HOURS = float(os.environ.get("QUEUE_MAX_AGE_HOURS", "6"))
-ENABLE_ROUND_2 = os.environ.get("ENABLE_ROUND_2", "0") == "1"
-MAX_ACCOUNTS_PER_RUN = int(os.environ.get("MAX_ACCOUNTS_PER_RUN", "3"))
+SLEEP_BEFORE_PUBLISH   = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "5.0"))
+SLEEP_IMGUR            = float(os.environ.get("SLEEP_IMGUR", "0.5"))
+VERIFY_WAIT            = float(os.environ.get("VERIFY_WAIT", "8.0"))
+VERIFY_WINDOW          = int(os.environ.get("VERIFY_WINDOW", "600"))
+DEDUP_MIN_LEN          = 25
+DEDUP_HAMMING          = 7
 
-SESSION = requests.Session()
+# Seconds subtracted from checked_until_time when building the since_time
+# for each API query — avoids missing tweets near the boundary.
+SINCE_OVERLAP_SECONDS = int(os.environ.get("SINCE_OVERLAP_SECONDS", "900"))  # 15 min
+
+BASE_DIR            = os.path.dirname(os.path.abspath(__file__))
+STATE_FILE          = os.path.join(BASE_DIR, "state.json")
+SCREENSHOT_DIR      = os.path.join(BASE_DIR, "screenshots")
+SCREENSHOT_SCRIPT   = os.path.join(BASE_DIR, "screenshot.js")
+QUEUE_MAX_AGE_HOURS = float(os.environ.get("QUEUE_MAX_AGE_HOURS", "6"))
+
+# Server-side filters baked into every search query.
+# API returns only original photo tweets — not retweets, replies, quotes, or videos.
+# Local filter functions remain as a safety net but rarely fire.
+SOCIALDATA_FILTERS = (
+    "filter:images"
+    " -filter:videos"
+    " -filter:retweets"
+    " -filter:nativeretweets"
+    " -filter:replies"
+    " -filter:quote"
+)
+
+# OR-query batching: combine multiple accounts into one request.
+#   (from:a OR from:b OR from:c) filter:images ... since_time:N
+# With 20 accounts and chunk size 10 → 2 requests instead of 20.
+# Both limits must be satisfied to keep a chunk together.
+OR_CHUNK_MAX_ACCOUNTS = int(os.environ.get("OR_CHUNK_MAX_ACCOUNTS", "10"))
+OR_CHUNK_MAX_CHARS    = int(os.environ.get("OR_CHUNK_MAX_CHARS", "1400"))
+
+SESSION        = requests.Session()
 RETRY_STATUSES = {429, 500, 502, 503, 504}
 
 
@@ -111,6 +133,7 @@ class StageTimer:
         log(f"✅ END: {self.name} ({dt:.2f}s)")
         return False
 
+
 # -----------------------
 # Time helpers
 # -----------------------
@@ -129,13 +152,14 @@ def parse_dt(s: str) -> datetime:
     s = (s or "").strip()
     if s.endswith("Z"):
         s = s[:-1] + "+00:00"
-    # Fix +0000 / -0530 style (no colon) that fromisoformat rejects on Python < 3.11
     s = re.sub(r'([+-])(\d{2})(\d{2})$', r'\1\2:\3', s)
     dt = datetime.fromisoformat(s)
-    # If no timezone info, assume UTC
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+def dt_to_unix(dt: datetime) -> int:
+    return int(dt.timestamp())
 
 def extract_tweet_time(t: Dict[str, Any]) -> Optional[str]:
     if isinstance(t.get("tweet_created_at"), str) and t["tweet_created_at"].strip():
@@ -144,6 +168,27 @@ def extract_tweet_time(t: Dict[str, Any]) -> Optional[str]:
         v = t.get(k)
         if isinstance(v, str) and v.strip():
             return v.strip()
+    return None
+
+def extract_tweet_author(t: Dict[str, Any]) -> Optional[str]:
+    """
+    Extract lowercased screen_name of the tweet author.
+    Used to attribute per-account stats from OR-query results,
+    where multiple accounts share one API request.
+
+    Only uses unique handle fields (screen_name, username, author_username).
+    The display `name` field ("Cricket Central", "Mufaddal Vohra") is
+    intentionally excluded — it is non-unique and would corrupt stats keys.
+    """
+    user = t.get("user") or {}
+    if isinstance(user, dict):
+        sn = user.get("screen_name") or user.get("username")
+        if sn:
+            return str(sn).lower().strip()
+    for k in ("screen_name", "username", "author_username"):
+        v = t.get(k)
+        if v:
+            return str(v).lower().strip()
     return None
 
 def ensure_dirs():
@@ -159,8 +204,9 @@ def sort_queue_oldest_first(queue: List[str], tweet_data: Dict[str, Any]) -> Lis
             return datetime.min.replace(tzinfo=timezone.utc)
     return sorted(queue, key=key)
 
+
 # -----------------------
-# Tweet filters
+# Tweet filters (safety net — API filters handle most cases)
 # -----------------------
 def is_video_tweet(t: Dict[str, Any]) -> bool:
     media = []
@@ -193,18 +239,14 @@ def is_retweet(t: Dict[str, Any]) -> bool:
     return False
 
 def is_reply(t: Dict[str, Any]) -> bool:
-    # 0) SocialData explicit type
     if (t.get("type") or "").lower() == "reply":
         return True
-    # 1) reply-to status ID
     for k in ("in_reply_to_status_id", "in_reply_to_status_id_str"):
         if t.get(k) not in (None, "", 0, "0"):
             return True
-    # 2) reply-to user ID
     for k in ("in_reply_to_user_id", "in_reply_to_user_id_str"):
         if t.get(k) not in (None, "", 0, "0"):
             return True
-    # 3) starts with @mention
     txt = (t.get("full_text") or t.get("text") or "").lstrip()
     if txt.startswith("@"):
         return True
@@ -232,6 +274,7 @@ def has_photo_media(t: Dict[str, Any]) -> bool:
         if isinstance(m, dict) and (m.get("type") or "").lower() == "photo":
             return True
     return False
+
 STOPWORDS = {
     "the","a","an","and","or","to","of","in","on","for","with","at","by",
     "is","are","was","were","be","been","it","this","that","these","those",
@@ -240,30 +283,13 @@ STOPWORDS = {
 
 def normalize_text_for_dedupe(t: Dict[str, Any]) -> str:
     txt = (t.get("full_text") or t.get("text") or "").lower()
-
-    # remove urls
     txt = re.sub(r"https?://\S+|www\.\S+", " ", txt)
-
-    # remove mentions
     txt = re.sub(r"@\w+", " ", txt)
-
-    # keep hashtags text but remove the #
     txt = txt.replace("#", " ")
-
-    # normalize numbers (scores/stats) -> 0
-    # Keep small numbers (2, 6, 20) because they matter in cricket.
-    # Only normalize big numbers (years, 100+, etc.)
     txt = re.sub(r"\b\d{3,}\b", " 0 ", txt)
-
-    # remove non letters/numbers/spaces
     txt = re.sub(r"[^a-z0-9\s]+", " ", txt)
-
-    # split, remove stopwords, collapse
     toks = [w for w in txt.split() if w and w not in STOPWORDS]
-
-    # if it's too short, it’s not safe to dedupe (avoid false positives)
-    norm = " ".join(toks)
-    return norm.strip()
+    return " ".join(toks).strip()
 
 def simhash64(text: str) -> int:
     if not text:
@@ -283,9 +309,11 @@ def simhash64(text: str) -> int:
 def hamming64(a: int, b: int) -> int:
     x = a ^ b
     try:
-        return x.bit_count()      # Python 3.10+
+        return x.bit_count()
     except AttributeError:
-        return bin(x).count("1")  # older
+        return bin(x).count("1")
+
+
 # -----------------------
 # State
 # -----------------------
@@ -293,17 +321,22 @@ def load_state() -> Dict[str, Any]:
     if not os.path.exists(STATE_FILE):
         return {
             "start_time": None,
+            # checked_until_time is the SOLE fetch watermark.
+            # Updated each run to the max tweet time seen (or now on quiet runs).
+            # ⚠️  last_post_time is AUDIT-ONLY — never use it as a fetch cutoff.
+            "checked_until_time": None,
             "queue": [],
             "posted": [],
-            "seen": [],          # all evaluated tweet IDs (pass or fail)
+            "seen": [],
             "tweet_data": {},
             "total_runs": 0,
             "total_carousels": 0,
             "last_caption_index": -1,
             "last_caption_text": "",
+            # last_post_time = UTC timestamp when an IG carousel was successfully
+            # published. AUDIT / MONITORING USE ONLY.
+            # ⚠️  Must NEVER be read for fetch cutoff logic. Use checked_until_time.
             "last_post_time": None,
-            "first_cycle": [],
-            "first_cycle_idx": 0,
             "next_start_idx": 0,
             "account_stats": {},
         }
@@ -311,6 +344,7 @@ def load_state() -> Dict[str, Any]:
         s = json.load(f)
 
     s.setdefault("start_time", None)
+    s.setdefault("checked_until_time", None)
     s.setdefault("queue", [])
     s.setdefault("posted", [])
     s.setdefault("seen", [])
@@ -320,17 +354,18 @@ def load_state() -> Dict[str, Any]:
     s.setdefault("in_flight", [])
     s.setdefault("last_caption_index", -1)
     s.setdefault("last_caption_text", "")
-    s.setdefault("last_post_time", None)
-    s.setdefault("first_cycle", [])
-    s.setdefault("first_cycle_idx", 0)
+    s.setdefault("last_post_time", None)   # audit-only, never read for fetching
     s.setdefault("next_start_idx", 0)
     s.setdefault("account_stats", {})
-    if not isinstance(s["account_stats"], dict):  s["account_stats"] = {}
-    if not isinstance(s["in_flight"], list):  s["in_flight"] = []
-    if not isinstance(s["queue"], list):      s["queue"] = []
-    if not isinstance(s["posted"], list):     s["posted"] = []
-    if not isinstance(s["seen"], list):       s["seen"] = []
-    if not isinstance(s["tweet_data"], dict): s["tweet_data"] = {}
+    # Clean up keys removed in this version
+    s.pop("first_cycle", None)
+    s.pop("first_cycle_idx", None)
+    if not isinstance(s["account_stats"], dict):   s["account_stats"] = {}
+    if not isinstance(s.get("in_flight"), list):   s["in_flight"] = []
+    if not isinstance(s["queue"], list):            s["queue"] = []
+    if not isinstance(s["posted"], list):           s["posted"] = []
+    if not isinstance(s["seen"], list):             s["seen"] = []
+    if not isinstance(s["tweet_data"], dict):       s["tweet_data"] = {}
 
     return s
 
@@ -341,7 +376,7 @@ def save_state(state: Dict[str, Any]) -> None:
 def bound_state(state: Dict[str, Any]) -> None:
     state["queue"]  = state["queue"][-5000:]
     state["posted"] = state["posted"][-5000:]
-    state["seen"]   = state["seen"][-10000:]  # last 10k evaluated IDs
+    state["seen"]   = state["seen"][-10000:]
     qset = set(state["queue"])
     state["tweet_data"] = {k: v for k, v in state.get("tweet_data", {}).items() if k in qset}
 
@@ -361,17 +396,15 @@ def recover_in_flight(state: Dict[str, Any]) -> None:
     state["queue"] = [str(x) for x in state["queue"] if str(x) not in inflight_set]
     state["in_flight"] = []
 
-def evict_stale_queue(state: Dict[str, Any], tweet_data: Dict[str, Any], max_age_hours: float = 8.0) -> None:
-    """Remove tweets from the queue that are older than max_age_hours."""
+def evict_stale_queue(state: Dict[str, Any], tweet_data: Dict[str, Any],
+                      max_age_hours: float = 8.0) -> None:
     now = datetime.now(timezone.utc)
-    fresh = []
-    evicted = 0
-
+    fresh, evicted = [], 0
     for tid in state["queue"]:
         t = tweet_data.get(tid, {})
         ts = extract_tweet_time(t)
         if not ts:
-            fresh.append(tid)  # no timestamp → keep (safe default)
+            fresh.append(tid)
             continue
         try:
             age_hours = (now - parse_dt(ts)).total_seconds() / 3600
@@ -381,8 +414,7 @@ def evict_stale_queue(state: Dict[str, Any], tweet_data: Dict[str, Any], max_age
                 evicted += 1
                 dbg(f"  evicted stale: {tid} age={age_hours:.1f}h")
         except Exception:
-            fresh.append(tid)  # bad parse → keep
-
+            fresh.append(tid)
     state["queue"] = fresh
     if evicted:
         log(f"  🗑️  Evicted {evicted} stale tweet(s) from queue (older than {max_age_hours}h)")
@@ -395,81 +427,63 @@ def pick_caption(state: Dict[str, Any]) -> Tuple[str, int]:
     last_index = int(state.get("last_caption_index", -1))
     next_index = (last_index + 1) % len(CAPTIONS)
     return CAPTIONS[next_index], next_index
-def pick_accounts_fair_first(state: Dict[str, Any], accounts: List[str]) -> List[str]:
-    """
-    Ensures each account gets equal chance to be 1st:
-      - Create a random permutation (cycle)
-      - Use next element as the 1st account each run
-      - When cycle ends, reshuffle a new cycle
-    Rest of accounts are shuffled randomly each run.
-    """
-    n = len(accounts)
-    if n <= 1:
-        return accounts[:]
 
-    cycle = state.get("first_cycle") or []
-    idx = int(state.get("first_cycle_idx", 0) or 0)
 
-    # Rebuild cycle if missing/invalid/different accounts set
-    if (not isinstance(cycle, list)) or (set(cycle) != set(accounts)) or (len(cycle) != n) or idx >= n:
-        cycle = accounts[:]
-        random.shuffle(cycle)
-        idx = 0
-
-    first = cycle[idx]
-    idx += 1
-
-    # If cycle finished, reshuffle next cycle
-    if idx >= n:
-        next_cycle = accounts[:]
-        random.shuffle(next_cycle)
-
-        # Optional: avoid same first across cycle boundary
-        # (prevents ...A as last of cycle and A as first of next cycle)
-        if next_cycle[0] == first and n > 1:
-            # simple swap with another position
-            j = random.randrange(1, n)
-            next_cycle[0], next_cycle[j] = next_cycle[j], next_cycle[0]
-
-        cycle = next_cycle
-        idx = 0
-
-    state["first_cycle"] = cycle
-    state["first_cycle_idx"] = idx
-
-    # Shuffle the remaining accounts for this run
-    rest = [a for a in accounts if a != first]
-    random.shuffle(rest)
-    return [first] + rest
-
-def pick_accounts_round_robin(state: Dict[str, Any], accounts: List[str]) -> List[str]:
-    n = len(accounts)
-    if n <= 1:
-        return accounts[:]
-
-    idx = int(state.get("next_start_idx", 0) or 0) % n
-
-    # build cyclic order starting from idx
-    order = accounts[idx:] + accounts[:idx]
-
-    # move start for next run
-    state["next_start_idx"] = (idx + 1) % n
-    return order
 # -----------------------
-# SocialData — single account fetch
+# OR-query chunking
 # -----------------------
-def socialdata_fetch_account(
-    account: str,
-    cursor: Optional[str] = None
-) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+def build_or_query_chunks(accounts: List[str], since_unix: int) -> List[str]:
     """
-    Fetch ~20 latest tweets for one account.
-    Returns (tweets, next_cursor).
+    Split accounts into chunks and build one search query string per chunk.
+
+    Query format:
+        (from:a OR from:b OR from:c) filter:images -filter:videos ... since_time:N
+
+    A new chunk is started when adding the next account would exceed either:
+      - OR_CHUNK_MAX_ACCOUNTS  (default 10)
+      - OR_CHUNK_MAX_CHARS     (default 1400) — conservative GET URL length limit
+
+    Result: ceil(len(accounts) / chunk_size) requests instead of len(accounts).
+    With 20 accounts and chunk=10 → 2 requests per run.
+    """
+    suffix = f" {SOCIALDATA_FILTERS} since_time:{since_unix}"
+    chunks: List[str] = []
+    current: List[str] = []
+
+    def flush():
+        if not current:
+            return
+        from_part = " OR ".join(f"from:{a}" for a in current)
+        query = f"({from_part}){suffix}" if len(current) > 1 else f"{from_part}{suffix}"
+        chunks.append(query)
+        current.clear()
+
+    for account in accounts:
+        tentative = current + [account]
+        from_part = " OR ".join(f"from:{a}" for a in tentative)
+        tentative_query = (
+            f"({from_part}){suffix}" if len(tentative) > 1 else f"{from_part}{suffix}"
+        )
+        if (len(tentative) > OR_CHUNK_MAX_ACCOUNTS
+                or len(tentative_query) > OR_CHUNK_MAX_CHARS) and current:
+            flush()
+        current.append(account)
+
+    flush()
+    return chunks
+
+
+# -----------------------
+# SocialData — execute one search query
+# -----------------------
+def socialdata_fetch_query(query: str) -> List[Dict[str, Any]]:
+    """
+    Execute one pre-built search query and return all tweets returned.
+    The query already contains server-side filters and since_time.
     """
     headers = {"Authorization": f"Bearer {SOCIALDATA_API_KEY}"}
-    params: Dict[str, Any] = {"query": f"from:{account}", "type": "Latest"}
-    if cursor:
-        params["cursor"] = cursor
+    params: Dict[str, Any] = {"query": query, "type": "Latest"}
+    dbg(f"  query ({len(query)} chars): {query}")
     try:
         r = request_with_retry(
             "GET", "https://api.socialdata.tools/twitter/search",
@@ -477,14 +491,67 @@ def socialdata_fetch_account(
         )
         r.raise_for_status()
         j = r.json()
-        return j.get("tweets") or [], j.get("next_cursor")
+        return j.get("tweets") or []
     except Exception as e:
-        log(f"  ⚠️  SocialData fetch failed for @{account}: {e}")
-        return [], None
+        log(f"  ⚠️  SocialData fetch failed: {e}")
+        return []
 
 
 # -----------------------
-# Filter helper
+# Per-account stats
+# -----------------------
+def update_account_stats(
+    state: Dict[str, Any],
+    account: str,
+    *,
+    fetched: int,
+    evaluated: int,
+    good: int,
+) -> None:
+    state.setdefault("account_stats", {})
+    st = state["account_stats"].setdefault(account, {
+        "runs": 0, "fetched": 0, "evaluated": 0, "good": 0,
+        "last_run": None, "last_fetched": 0, "last_evaluated": 0,
+        "last_good": 0, "history": [],
+    })
+    st["runs"]      = int(st.get("runs", 0)) + 1
+    st["fetched"]   = int(st.get("fetched", 0)) + int(fetched)
+    st["evaluated"] = int(st.get("evaluated", 0)) + int(evaluated)
+    st["good"]      = int(st.get("good", 0)) + int(good)
+    st["last_run"]       = utc_now_iso()
+    st["last_fetched"]   = int(fetched)
+    st["last_evaluated"] = int(evaluated)
+    st["last_good"]      = int(good)
+    hist = st.get("history")
+    if not isinstance(hist, list):
+        hist = []
+    hist.append({"ts": st["last_run"], "fetched": int(fetched),
+                 "evaluated": int(evaluated), "good": int(good)})
+    st["history"] = hist[-50:]
+
+def flush_per_account_stats(
+    state: Dict[str, Any],
+    per_account: Dict[str, Dict[str, int]],
+) -> None:
+    """
+    Commit per-account counters (derived from each tweet's author field)
+    into persistent account_stats.
+
+    Because we use OR queries, multiple accounts share one API request.
+    Per-account granularity is recovered here by reading extract_tweet_author()
+    on each returned tweet — no stats are lost.
+    """
+    for account, c in per_account.items():
+        update_account_stats(
+            state, account,
+            fetched=c.get("fetched", 0),
+            evaluated=c.get("evaluated", 0),
+            good=c.get("good", 0),
+        )
+
+
+# -----------------------
+# Filter helper (safety net — API handles most filtering now)
 # -----------------------
 def passes_filters(
     t: Dict[str, Any],
@@ -492,13 +559,16 @@ def passes_filters(
     posted_set: set,
     queued_set: set,
     seen_set: set,
-    content_hashes: set,   # NEW (in-memory per run)
+    content_hashes: set,
 ) -> Tuple[bool, str]:
     tid = str(t.get("id_str") or t.get("id") or "")
     if not tid:                 return False, "no_id"
     if tid in seen_set:         return False, "seen"
     if tid in posted_set:       return False, "posted"
     if tid in queued_set:       return False, "queued"
+
+    # Safety-net: API query already excludes these, but a small fraction
+    # may slip through — keep local checks as a defensive layer.
     if is_retweet(t):           return False, "retweet"
     if is_quote_tweet(t):       return False, "quote"
     if is_reply(t):             return False, "reply"
@@ -515,70 +585,20 @@ def passes_filters(
     if created_dt <= cutoff_dt:
         return False, "old"
 
-    # ---- NEW: dedupe within same run (text-based) ----
+    # Near-duplicate text check within this run's batch
     norm = normalize_text_for_dedupe(t)
     if len(norm) >= DEDUP_MIN_LEN:
         h = simhash64(norm)
-    
         for old_h in content_hashes:
-            dist = hamming64(h, old_h)
-            if dist <= DEDUP_HAMMING:
+            if hamming64(h, old_h) <= DEDUP_HAMMING:
                 if DEBUG:
-                    log(f"[DEDUP] near-dup: tid={tid} ham={dist} norm={norm[:120]!r}")
+                    log(f"[DEDUP] near-dup: tid={tid} norm={norm[:120]!r}")
                 return False, "near_dup_text"
-    
-        # only if NOT duplicate
         t["_simhash64"] = h
+
     return True, ""
 
-def update_account_stats(
-    state: Dict[str, Any],
-    account: str,
-    *,
-    fetched: int,
-    evaluated: int,
-    good: int
-) -> None:
-    """
-    Persist per-account counters.
-    'good' == number of tweets added to queue from this account.
-    """
-    state.setdefault("account_stats", {})
-    st = state["account_stats"].setdefault(account, {
-        "runs": 0,
-        "fetched": 0,
-        "evaluated": 0,
-        "good": 0,
-        "last_run": None,
-        "last_fetched": 0,
-        "last_evaluated": 0,
-        "last_good": 0,
-        "history": [],  # rolling last N runs
-    })
 
-    # lifetime totals
-    st["runs"] = int(st.get("runs", 0)) + 1
-    st["fetched"] = int(st.get("fetched", 0)) + int(fetched)
-    st["evaluated"] = int(st.get("evaluated", 0)) + int(evaluated)
-    st["good"] = int(st.get("good", 0)) + int(good)
-
-    # last run snapshot
-    st["last_run"] = utc_now_iso()
-    st["last_fetched"] = int(fetched)
-    st["last_evaluated"] = int(evaluated)
-    st["last_good"] = int(good)
-
-    # rolling history (keep last 50)
-    hist = st.get("history")
-    if not isinstance(hist, list):
-        hist = []
-    hist.append({
-        "ts": st["last_run"],
-        "fetched": int(fetched),
-        "evaluated": int(evaluated),
-        "good": int(good),
-    })
-    st["history"] = hist[-50:]
 # -----------------------
 # Fetch + filter + enqueue
 # -----------------------
@@ -588,22 +608,34 @@ def fetch_and_enqueue(
     queue: List[str],
     posted_list: List[str],
     tweet_data: Dict[str, Any],
-) -> None:
+) -> Optional[datetime]:
     """
-    GLOBAL cutoff strategy:
+    Fetch tweets for all accounts using OR-query batching + global since_time.
 
-    - cutoff_dt is ONE global time (state["last_checked_time"] or start_time)
-    - We fetch accounts (shuffled)
-    - We enqueue tweets newer than cutoff_dt and passing filters
-    - We track newest tweet time seen globally and store it as last_checked_time
-      (you said you accept that this can skip older tweets from accounts not fetched)
+    Fetch cutoff:
+      - cutoff_dt = checked_until_time − SINCE_OVERLAP_SECONDS (computed by caller)
+      - since_unix = dt_to_unix(cutoff_dt), embedded in each query string
+      ⚠️  last_post_time is AUDIT-ONLY and is NEVER read here.
+
+    OR-query batching:
+      - Accounts are split into chunks (≤OR_CHUNK_MAX_ACCOUNTS, ≤OR_CHUNK_MAX_CHARS)
+      - Each chunk = 1 API request  →  20 accounts = ~2 requests instead of 20
+      - Fetch stops early if queue reaches THRESHOLD mid-chunk-loop
+
+    Per-account stats:
+      - Derived from each tweet's author field via extract_tweet_author()
+      - No granularity lost despite batching
+
+    Returns:
+      max tweet datetime seen this run (caller uses it to advance checked_until_time)
     """
+    posted_set     = set(posted_list)
+    queued_set     = set(queue)
+    seen_set       = set(state.get("seen") or [])
+    content_hashes: set = set()
 
-    posted_set = set(posted_list)
-    queued_set = set(queue)
-    seen_set   = set(state.get("seen") or [])
-    content_hashes: set = set()   # NEW: resets every run
-
+    since_unix = dt_to_unix(cutoff_dt)
+    log(f"  since_time: {cutoff_dt.isoformat()} (unix={since_unix})")
 
     counts: Dict[str, int] = {
         "added": 0, "seen": 0, "posted": 0, "queued": 0,
@@ -612,135 +644,116 @@ def fetch_and_enqueue(
         "no_time": 0, "bad_time": 0, "no_id": 0, "near_dup_text": 0,
     }
 
-    def process_batch(tweets: List[Dict[str, Any]]) -> Tuple[int, int]:
-        
-        n = 0
-        good = 0
-        evaluated = 0
+    # Per-account counters keyed by lowercased screen_name.
+    # Populated by reading each tweet's author — not by request grouping.
+    per_account: Dict[str, Dict[str, int]] = {}
 
+    def inc(bucket: str, field: str, n: int = 1) -> None:
+        pa = per_account.setdefault(bucket, {"fetched": 0, "evaluated": 0, "good": 0})
+        pa[field] = pa.get(field, 0) + n
+
+    max_tweet_dt: Optional[datetime] = None
+
+    def _update_max_dt(t: Dict[str, Any]) -> None:
+        """
+        Update max_tweet_dt from this tweet's timestamp.
+        Called for EVERY returned tweet before any filter decision,
+        so the watermark reflects the newest tweet the API gave us —
+        not just the newest tweet we decided to keep.
+        Prevents max_tweet_dt staying None when all tweets fail filters
+        (seen/queued/near-dup/etc), which would cause the caller to
+        incorrectly treat this as a "no tweets seen" quiet run.
+        """
+        nonlocal max_tweet_dt
+        ts = extract_tweet_time(t)
+        if ts:
+            try:
+                tdt = parse_dt(ts)
+                if max_tweet_dt is None or tdt > max_tweet_dt:
+                    max_tweet_dt = tdt
+            except Exception:
+                pass
+
+    def process_batch(tweets: List[Dict[str, Any]]) -> None:
         for t in tweets:
+            # Update watermark FIRST, before any filter check.
+            # Even tweets that are seen/queued/posted prove the API returned
+            # data up to their timestamp — that should move the watermark forward.
+            _update_max_dt(t)
+
             if len(queue) >= THRESHOLD:
-                break  # stop adding more
-            tid = str(t.get("id_str") or t.get("id") or "")
+                # Stop enqueuing — watermark already captured above.
+                break
+
+            tid    = str(t.get("id_str") or t.get("id") or "")
+            author = (extract_tweet_author(t) or "unknown")
+            inc(author, "fetched")
 
             ok, reason = passes_filters(
                 t, cutoff_dt, posted_set, queued_set, seen_set, content_hashes
             )
 
-            # Mark seen AFTER checking
             if tid:
                 seen_set.add(tid)
                 counts["seen"] += 1
-            evaluated += 1
+            inc(author, "evaluated")
 
             if ok:
-                # add hash only when actually enqueuing
                 h = t.get("_simhash64")
                 if isinstance(h, int) and h != 0:
                     content_hashes.add(h)
-            
                 counts["added"] += 1
                 queue.append(tid)
                 queued_set.add(tid)
                 t.pop("_simhash64", None)
                 tweet_data[tid] = t
-                good += 1
-                
-                n += 1
+                inc(author, "good")
             else:
                 counts[reason] = counts.get(reason, 0) + 1
 
-        return good, evaluated
+    # Build OR-query chunks from the full account list
+    chunks = build_or_query_chunks(ACCOUNTS, since_unix)
+    log(f"  OR-query chunks: {len(chunks)} request(s) for {len(ACCOUNTS)} account(s) "
+        f"(max_per_chunk={OR_CHUNK_MAX_ACCOUNTS}, max_chars={OR_CHUNK_MAX_CHARS})")
 
-    # Shuffle accounts every run
-    order = pick_accounts_round_robin(state, ACCOUNTS)
-    first = order[0]
-    rest = order[1:]
-    random.shuffle(rest)
-    shuffled_accounts = [first] + rest
-    log(f"  Account order this run (rr-first+shuffle): {shuffled_accounts}")
+    # Track whether every chunk was fetched and processed.
+    # Used by the caller to decide whether it's safe to advance the watermark
+    # to "now" on a genuinely quiet run (all chunks returned 0 tweets).
+    # If we break early (queue full) or a chunk fails, this stays False.
+    all_chunks_completed = True
 
-    # Round 1: stop early when queue hits threshold
-    log(f"  Round 1: fetching up to {len(shuffled_accounts)} accounts (stop at queue={THRESHOLD})...")
-
-    LOW_YIELD_THRESHOLD = 2
-    dry_accounts: List[str] = []
-    cursors: Dict[str, Optional[str]] = {}
-    fetched_accounts = 0
-
-    for account in shuffled_accounts:
+    for i, query in enumerate(chunks, 1):
         if len(queue) >= THRESHOLD:
-            log(f"  ✅ Queue reached threshold ({THRESHOLD}) — stopping early after {fetched_accounts} accounts.")
+            log(f"  ✅ Queue reached threshold ({THRESHOLD}) — skipping remaining chunks.")
+            all_chunks_completed = False
             break
-        if fetched_accounts >= MAX_ACCOUNTS_PER_RUN:
-            log(f"  🛑 Hit MAX_ACCOUNTS_PER_RUN={MAX_ACCOUNTS_PER_RUN}. Stopping fetch early.")
-            break
-        tweets, cursor = socialdata_fetch_account(account)
-        cursors[account] = cursor
-        fetched_accounts += 1
-        good, evaluated = process_batch(tweets)
-        dbg(f"  @{account}: {len(tweets)} fetched → {good} queued (evaluated={evaluated}) (queue now: {len(queue)})")
-        update_account_stats(state, account, fetched=len(tweets), evaluated=evaluated, good=good)
-        if good < LOW_YIELD_THRESHOLD:
-            dry_accounts.append(account)
+        log(f"  Chunk {i}/{len(chunks)} ({len(query)} chars)")
+        tweets = socialdata_fetch_query(query)
+        log(f"  Chunk {i}: {len(tweets)} tweet(s) returned")
+        process_batch(tweets)
 
-    log(
-        f"  Round 1 done. Fetched {fetched_accounts}/{len(shuffled_accounts)} accounts. "
-        f"Queue: {len(queue)}/{THRESHOLD}. Low-yield: {dry_accounts}"
-    )
+    # Commit per-account stats derived from tweet authors
+    flush_per_account_stats(state, per_account)
 
-    # Round 2: paginate only low-yield accounts
-    if ENABLE_ROUND_2 and len(queue) < THRESHOLD and dry_accounts:
-        log(f"  Round 2: paginating {len(dry_accounts)} low-yield accounts...")
-
-        for account in dry_accounts:
-            if len(queue) >= THRESHOLD:
-                break
-
-            cursor = cursors.get(account)
-            if not cursor:
-                dbg(f"  @{account}: no cursor available, skipping round 2")
-                continue
-
-            tweets, _ = socialdata_fetch_account(account, cursor=cursor)
-            good2, evaluated2 = process_batch(tweets)
-            dbg(f"  @{account} page 2: {len(tweets)} fetched → {good2} queued (evaluated={evaluated2})")
-            
-            # merge page2 into stats WITHOUT counting a new "run"
-            state.setdefault("account_stats", {})
-            st = state["account_stats"].setdefault(account, {
-                "runs": 0, "fetched": 0, "evaluated": 0, "good": 0,
-                "last_run": None, "last_fetched": 0, "last_evaluated": 0, "last_good": 0,
-                "history": [],
-            })
-            
-            st["fetched"] = int(st.get("fetched", 0)) + len(tweets)
-            st["evaluated"] = int(st.get("evaluated", 0)) + evaluated2
-            st["good"] = int(st.get("good", 0)) + good2
-            
-            st["last_fetched"] = int(st.get("last_fetched", 0)) + len(tweets)
-            st["last_evaluated"] = int(st.get("last_evaluated", 0)) + evaluated2
-            st["last_good"] = int(st.get("last_good", 0)) + good2
-            # also patch the most recent history record so it reflects the combined run
-            hist = st.get("history")
-            if isinstance(hist, list) and hist:
-                hist[-1]["fetched"] = int(st.get("last_fetched", 0))
-                hist[-1]["evaluated"] = int(st.get("last_evaluated", 0))
-                hist[-1]["good"] = int(st.get("last_good", 0))
-
-        log(f"  Round 2 done. Queue: {len(queue)}/{THRESHOLD}")
-    elif not ENABLE_ROUND_2:
-        dbg("Round 2 disabled (ENABLE_ROUND_2=0)")
-    # Persist seen list
+    # Persist updated seen list
     state["seen"] = list(seen_set)
 
     log(
-    f"  Filter summary — added: {counts['added']} | "
-    f"near_dup_text: {counts['near_dup_text']} | "
-    f"reply: {counts['reply']} | quote: {counts['quote']} | retweet: {counts['retweet']} | "
-    f"video: {counts['video']} | no_photo: {counts['no_photo']} | old: {counts['old']} | "
-    f"dupe(posted/queued): {counts['posted'] + counts['queued']}"
-)
+        f"  Filter summary — added: {counts['added']} | "
+        f"near_dup_text: {counts['near_dup_text']} | "
+        f"reply: {counts['reply']} | quote: {counts['quote']} | "
+        f"retweet: {counts['retweet']} | video: {counts['video']} | "
+        f"no_photo: {counts['no_photo']} | old: {counts['old']} | "
+        f"dupe(posted/queued): {counts['posted'] + counts['queued']}"
+    )
+    if DEBUG and per_account:
+        log("  Per-account this run:")
+        for acct, c in sorted(per_account.items()):
+            log(f"    @{acct}: fetched={c['fetched']} evaluated={c['evaluated']} good={c['good']}")
+
+    return max_tweet_dt, all_chunks_completed
+
+
 # -----------------------
 # Imgur upload
 # -----------------------
@@ -803,7 +816,7 @@ def ig_publish_with_backoff(creation_id: str, max_attempts: int = 4) -> Optional
             return j["id"]
         log(f"  ⚠️  Attempt {attempt} failed: {j.get('error', {}).get('message', j)}")
         if attempt < max_attempts:
-            wait = 10 * (2 ** (attempt - 1))  # 10s, 20s, 40s
+            wait = 10 * (2 ** (attempt - 1))
             log(f"  ⏳ Backing off {wait}s...")
             time.sleep(wait)
     return None
@@ -842,7 +855,6 @@ def ig_verify_publish(
     ]
     dbg(f"  Posts: {len(posts)} total, {len(carousels)} carousels")
 
-    # Check 1: any carousel posted within window?
     check_ts, ts_id = False, None
     for p in carousels:
         try:
@@ -856,8 +868,6 @@ def ig_verify_publish(
     if not check_ts:
         log(f"  ❌ Check 1 FAIL: no carousel in last {within_seconds}s")
 
-    # Check 2: most recent carousel caption matches this run's caption
-    # AND differs from last run's caption (proves it's a new post)
     check_cap, cap_id = False, None
     if carousels:
         recent  = (carousels[0].get("caption") or "").strip()
@@ -908,6 +918,8 @@ def main():
     log("=== cricket-bot starting ===")
     log(f"Accounts: {','.join(ACCOUNTS)}")
     log(f"Threshold: {THRESHOLD} | DRY_RUN: {int(DRY_RUN)} | DEBUG: {int(DEBUG)}")
+    log(f"OR_CHUNK: max_accounts={OR_CHUNK_MAX_ACCOUNTS} max_chars={OR_CHUNK_MAX_CHARS} | "
+        f"SINCE_OVERLAP: {SINCE_OVERLAP_SECONDS}s")
 
     ensure_dirs()
 
@@ -919,26 +931,46 @@ def main():
 
     state["total_runs"] = int(state.get("total_runs", 0)) + 1
 
-    # First run: set start_time and exit
+    # ── First run ──────────────────────────────────────────────────────────
+    # Initialise watermark to now and exit.
+    # Subsequent runs fetch only tweets posted AFTER this moment.
     if not state.get("start_time"):
-        state["start_time"] = utc_now_iso()
+        now_iso = utc_now_iso()
+        state["start_time"]         = now_iso
+        state["checked_until_time"] = now_iso
         bound_state(state)
         save_state(state)
-        log(f"Initialized start_time = {state['start_time']}")
+        log(f"Initialized start_time = checked_until_time = {now_iso}")
         log("First run exits. Next runs process tweets AFTER this time.")
         log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
+    # ── Fetch cutoff ───────────────────────────────────────────────────────
+    # checked_until_time is the ONLY source of truth for the fetch window.
+    # Fallback to start_time if checked_until_time was not yet written
+    # (e.g. migrating from an older state file).
+    #
+    # ⚠️  last_post_time is AUDIT-ONLY — it records when an IG post succeeded.
+    #     It must NEVER be used here. Using it would cause the fetch window to
+    #     stall on runs where no post happens, leading to repeated re-fetches
+    #     and unnecessary API cost.
+    raw_cutoff_str = state.get("checked_until_time") or state.get("start_time")
     try:
-        cutoff_str = state.get("last_post_time") or state["start_time"]
-        cutoff_dt = parse_dt(cutoff_str)
+        raw_cutoff_dt = parse_dt(raw_cutoff_str)
     except Exception as e:
-        log(f"❌ Bad start_time: {state.get('start_time')} ({e}) — resetting")
-        state["start_time"] = utc_now_iso()
+        log(f"❌ Bad checked_until_time: {raw_cutoff_str!r} ({e}) — resetting to now")
+        now_iso = utc_now_iso()
+        state["start_time"]         = now_iso
+        state["checked_until_time"] = now_iso
         bound_state(state)
         save_state(state)
         log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
+
+    # Subtract overlap to avoid missing tweets right at the boundary
+    cutoff_dt = raw_cutoff_dt - timedelta(seconds=SINCE_OVERLAP_SECONDS)
+    log(f"Raw watermark:    {raw_cutoff_dt.isoformat()}")
+    log(f"Cutoff (overlap): {cutoff_dt.isoformat()} (-{SINCE_OVERLAP_SECONDS}s)")
 
     queue: List[str]           = state["queue"]
     posted_list: List[str]     = state["posted"]
@@ -948,15 +980,50 @@ def main():
     last_caption_text = state.get("last_caption_text", "")
     log(f"Caption [{this_caption_index}]: {this_caption!r}  |  Last: {last_caption_text!r}")
 
-    # 1) Fetch + filter
-    with StageTimer("1) Fetch & filter (per-account)"):
-        fetch_and_enqueue(state, cutoff_dt, queue, posted_list, tweet_data)
-    # Sort oldest → newest (IMPORTANT: in-place)
-    queue[:] = sort_queue_oldest_first(queue, tweet_data)
+    # ── 1) Fetch + filter ──────────────────────────────────────────────────
+    with StageTimer("1) Fetch & filter (OR-query batches)"):
+        max_tweet_dt, all_chunks_completed = fetch_and_enqueue(
+            state, cutoff_dt, queue, posted_list, tweet_data
+        )
 
+    # ── Advance checked_until_time (safe watermark logic) ──────────────────
+    #
+    # Three cases:
+    #
+    # A) Tweets were seen (max_tweet_dt is not None):
+    #    → Use max tweet timestamp. Precise, always safe. Doesn't matter
+    #      whether we finished all chunks or broke early — the watermark only
+    #      moves to what we actually observed.
+    #
+    # B) No tweets seen AND all chunks completed:
+    #    → Genuinely quiet window (API returned 0 for every chunk, no errors).
+    #      Safe to advance to now so we don't re-query this empty window forever.
+    #
+    # C) No tweets seen BUT not all chunks completed (early break or API error):
+    #    → We can't confirm the window was truly empty. Keep the previous
+    #      watermark unchanged. The overlap will re-cover this window next run.
+    #      This is the key fix — the old code advanced to "now" here, which
+    #      could permanently skip tweets in chunks we never fetched.
+    #
+    prev_watermark = state.get("checked_until_time") or state.get("start_time")
+
+    if max_tweet_dt is not None:
+        # Case A — always safe
+        state["checked_until_time"] = max_tweet_dt.isoformat()
+        log(f"  ✅ checked_until_time → {state['checked_until_time']} (max tweet observed)")
+    elif all_chunks_completed:
+        # Case B — genuinely quiet, advance to now
+        state["checked_until_time"] = utc_now_iso()
+        log(f"  ℹ️  All chunks fetched, 0 tweets — watermark advanced to now: {state['checked_until_time']}")
+    else:
+        # Case C — incomplete run, keep prev watermark to avoid skipping tweets
+        state["checked_until_time"] = prev_watermark
+        log(f"  ⚠️  Incomplete fetch (early break or error) — watermark unchanged: {prev_watermark}")
+
+    queue[:] = sort_queue_oldest_first(queue, tweet_data)
     log(f"Queue: {len(queue)}/{THRESHOLD}")
 
-    # 2) Save state
+    # ── 2) Save state ──────────────────────────────────────────────────────
     with StageTimer("2) Save state"):
         state["queue"]      = queue
         state["posted"]     = posted_list
@@ -969,11 +1036,11 @@ def main():
         log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
-    # 3) Prepare batch
+    # ── 3) Prepare batch ───────────────────────────────────────────────────
     batch = state["queue"][:THRESHOLD]
     log(f"Batch: {len(batch)} tweets (sample: {batch[:3]})")
 
-    # 4) Render screenshots
+    # ── 4) Render screenshots ──────────────────────────────────────────────
     with StageTimer("3) Render screenshots"):
         good_pairs: List[Tuple[str, str]] = []
         ensure_dirs()
@@ -1013,14 +1080,17 @@ def main():
                                 parsed = True
                                 data = json.loads(line[len(marker):])
                                 for item in data.get("results", []):
-                                    if item.get("ok") and item.get("out") and os.path.exists(item["out"]):
-                                        t = os.path.splitext(os.path.basename(item["out"]))[0]
+                                    if item.get("ok") and item.get("out") \
+                                            and os.path.exists(item["out"]):
+                                        t = os.path.splitext(
+                                            os.path.basename(item["out"]))[0]
                                         good_pairs.append((t, item["out"]))
                         if not parsed:
                             dbg("No __BATCH_RESULT__ — falling back to fs check")
                             for it in batch_payload:
                                 if os.path.exists(it["out"]):
-                                    t = os.path.splitext(os.path.basename(it["out"]))[0]
+                                    t = os.path.splitext(
+                                        os.path.basename(it["out"]))[0]
                                     good_pairs.append((t, it["out"]))
                         log(f"  ✅ {len(good_pairs)} screenshots ready")
                 except subprocess.TimeoutExpired:
@@ -1034,7 +1104,7 @@ def main():
         log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
-    # 5) Upload to Imgur
+    # ── 5) Upload to Imgur ─────────────────────────────────────────────────
     with StageTimer("4) Upload to Imgur"):
         public_urls: List[str] = []
         imgur_good_ids: List[str] = []
@@ -1054,7 +1124,7 @@ def main():
         log("Not enough public URLs (need >=2). Keeping queue. Exiting.")
         return
 
-    # 6) IG containers
+    # ── 6) IG containers ───────────────────────────────────────────────────
     with StageTimer("5) Create IG containers"):
         container_ids: List[str] = []
         for i, url in enumerate(public_urls, 1):
@@ -1065,8 +1135,7 @@ def main():
                 dbg(f"  container_id: {cid}")
             else:
                 log("  ⚠️  IG container failed")
-            sleep_time = random.uniform(SLEEP_IG_CONTAINER_MIN, SLEEP_IG_CONTAINER_MAX)
-            time.sleep(sleep_time)
+            time.sleep(random.uniform(SLEEP_IG_CONTAINER_MIN, SLEEP_IG_CONTAINER_MAX))
 
     log(f"IG containers ok: {len(container_ids)}/{len(public_urls)}")
     if len(container_ids) < 2:
@@ -1074,7 +1143,7 @@ def main():
         log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
         return
 
-    # 7) Create carousel
+    # ── 7) Create carousel ─────────────────────────────────────────────────
     with StageTimer("6) Create carousel"):
         car_id = ig_create_carousel(container_ids, this_caption)
         if not car_id:
@@ -1083,7 +1152,7 @@ def main():
             return
         log(f"✅ Carousel id: {car_id}")
 
-    # 8) Publish
+    # ── 8) Publish ─────────────────────────────────────────────────────────
     with StageTimer("7) Publish"):
         log(f"⏳ Waiting {SLEEP_BEFORE_PUBLISH}s...")
         time.sleep(SLEEP_BEFORE_PUBLISH)
@@ -1112,7 +1181,7 @@ def main():
         else:
             log(f"✅ Published post_id: {post_id}")
 
-    # 9) Update state + cleanup
+    # ── 9) Update state + cleanup ──────────────────────────────────────────
     with StageTimer("8) Update state + cleanup"):
         posted_set = set(posted_list)
         good_set   = set(imgur_good_ids)
@@ -1128,7 +1197,9 @@ def main():
         state["in_flight"]          = []
         state["last_caption_index"] = this_caption_index
         state["last_caption_text"]  = this_caption
-        state["last_post_time"] = utc_now_iso()
+        # ⚠️  last_post_time = AUDIT-ONLY. Records when IG publish succeeded.
+        #     Never read this for fetch cutoff — use checked_until_time only.
+        state["last_post_time"]     = utc_now_iso()
 
         bound_state(state)
         save_state(state)
