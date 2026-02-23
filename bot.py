@@ -48,7 +48,7 @@ DEDUP_HAMMING          = 7
 
 # Seconds subtracted from checked_until_time when building the since_time
 # for each API query — avoids missing tweets near the boundary.
-SINCE_OVERLAP_SECONDS = int(os.environ.get("SINCE_OVERLAP_SECONDS", "900"))  # 15 min
+SINCE_OVERLAP_SECONDS = int(os.environ.get("SINCE_OVERLAP_SECONDS", "200"))  # 15 min
 
 BASE_DIR            = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE          = os.path.join(BASE_DIR, "state.json")
