@@ -217,25 +217,6 @@ async function replaceProfilePic(page) {
   await page.waitForTimeout(200);
 }
 
-async function dedupMediaOnly(page) {
-  await page.evaluate(() => {
-    const canon = (u) => {
-      if (!u) return "";
-      try { const url = new URL(u, location.href); return `${url.host}${url.pathname}`.toLowerCase(); }
-      catch { return String(u).split("?")[0].toLowerCase(); }
-    };
-    const tiles = Array.from(document.querySelectorAll('[data-testid="tweetPhoto"], [data-testid="videoPlayer"]'));
-    const seenTile = new Set();
-    for (const tile of tiles) {
-      const img = tile.querySelector("img");
-      const sig = img ? canon(img.currentSrc || img.src) : "";
-      if (!sig) continue;
-      if (seenTile.has(sig)) tile.style.display = "none";
-      else seenTile.add(sig);
-    }
-  });
-  await page.waitForTimeout(200);
-}
 
 // ── Find crop region ──────────────────────────────────────────────────
 async function findCropRegion(page) {
@@ -335,41 +316,62 @@ function buildCanvasHtml(rawB64) {
 }
 
 async function captureAndCompose(page, context, pngOut) {
-  const cropInfo = await findCropRegion(page);
-  if (!cropInfo) throw new Error("Could not determine crop region");
+  const tweetEl = await page.locator('[data-testid="tweet"]').first();
+  const box = await tweetEl.boundingBox(); // CSS pixels
+  if (!box) throw new Error("Could not find tweet bounding box");
 
-  const { x, y, width, cropBottom, metricsFound } = cropInfo;
-  const height = Math.max(50, cropBottom - y);
+  const metricsY = await page.evaluate(() => {
+    const tweet = document.querySelector('[data-testid="tweet"]');
+    if (!tweet) return null;
+    const tweetRect = tweet.getBoundingClientRect();
 
-  log(`  Metrics found: ${metricsFound} | Crop: x=${x.toFixed(0)}, y=${y.toFixed(0)}, w=${width.toFixed(0)}, h=${height.toFixed(0)}`);
+    const timeEl = tweet.querySelector("time");
+    if (timeEl) {
+      let row = timeEl;
+      for (let i = 0; i < 6; i++) { const p = row.parentElement; if (!p || p === tweet) break; row = p; }
+      const r = row.getBoundingClientRect();
+      if (r.top > tweetRect.top && r.height > 0) return r.top;
+    }
+    for (const g of tweet.querySelectorAll('[role="group"]')) {
+      if (g.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"]')) {
+        const r = g.getBoundingClientRect();
+        if (r.top > tweetRect.top && r.height > 0) return r.top;
+      }
+    }
+    return null;
+  });
+
+  // CSS px → physical px
+  const dpr = 3;
+  const cropBottomCss = metricsY !== null ? (metricsY - box.y) : box.height;
+
+  log(`  metricsY=${metricsY?.toFixed(0) ?? 'null'} | box.y=${box.y.toFixed(0)} | cropBottomCss=${cropBottomCss.toFixed(0)}`);
 
   const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
 
+  // Use page.screenshot with CSS pixel clip (Playwright auto-applies DPR)
   await page.screenshot({
     path: rawPath,
     type: "png",
     clip: {
-      x: Math.max(0, x),
-      y: Math.max(0, y),
-      width: Math.min(width, 1800),
-      height: Math.min(height, 4000),
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: Math.max(50, cropBottomCss),  // CSS pixels — Playwright handles DPR
     },
   });
 
   if (!fs.existsSync(rawPath)) throw new Error("Raw screenshot did not write");
 
   const rawB64 = fs.readFileSync(rawPath).toString("base64");
-
   const page2 = await context.newPage();
   await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
   await page2.setContent(buildCanvasHtml(rawB64), { waitUntil: "load" });
   await page2.waitForTimeout(80);
   await page2.screenshot({ path: pngOut, type: "png" });
   await page2.close();
-
   try { fs.unlinkSync(rawPath); } catch (_) {}
 }
-
 async function loadTweet(page, tweetUrl) {
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await waitForTweetContent(page);
@@ -377,10 +379,9 @@ async function loadTweet(page, tweetUrl) {
   await page.waitForTimeout(2500);
   await customizeAuthor(page);
   await replaceProfilePic(page);
-  await dedupMediaOnly(page);
+  // NO dedupMediaOnly — element screenshot handles this naturally
   await page.waitForTimeout(300);
 }
-
 async function renderOne(page, context, tweetObj, outPath) {
   const tweetUrl = buildTweetUrlFromJson(tweetObj);
   if (!tweetUrl) return { ok: false, reason: "missing_url_fields" };
