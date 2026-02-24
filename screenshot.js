@@ -306,25 +306,14 @@ async function loadTweet(page, tweetUrl) {
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await waitForTweetContent(page);
   await forceWhiteCss(page);
-  await page.evaluate(() => {
-  const t = document.querySelector('[data-testid="tweet"]');
-  if (t) t.scrollIntoView({ block: 'center' });
-});
-  // Wait for *actual* X media images to load (pbs/twimg), not only tweetPhoto selector.
+
+  // Wait for tweet images to actually finish loading instead of sleeping
   await page.waitForFunction(() => {
-    const tweet = document.querySelector('[data-testid="tweet"]');
-    if (!tweet) return false;
+    const imgs = Array.from(document.querySelectorAll('[data-testid="tweetPhoto"] img'));
+    if (!imgs.length) return true; // text-only tweet, nothing to wait for
+    return imgs.every(img => img.complete && img.naturalWidth > 0);
+  }, { timeout: 10000 }).catch(() => {}); // soft timeout — don't fail if slow
 
-    const mediaImgs = Array.from(tweet.querySelectorAll('img')).filter(img => {
-      const src = (img.getAttribute('src') || '');
-      return src.includes('pbs.twimg.com/media') || src.includes('twimg.com/media');
-    });
-
-    // If we expect images (filter:images), don't assume text-only quickly.
-    if (mediaImgs.length === 0) return false;
-
-    return mediaImgs.every(img => img.complete && img.naturalWidth > 0);
-  }, { timeout: 20000 });
   await customizeAuthor(page);
   await replaceProfilePic(page);
 }
@@ -335,21 +324,10 @@ async function renderOne(page, context, tweetObj, outPath) {
   if (tweetHasVideo(tweetObj)) return { ok: false, reason: "video_tweet_skipped" };
 
   const { pngOut, alsoWriteJpg, jpgOut } = normalizeOutputPath(outPath);
-
-  // Try twice: first load, then hard reload once (helps on Actions)
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      await loadTweet(page, tweetUrl);
-      await captureAndCompose(page, context, pngOut);
-      if (alsoWriteJpg && jpgOut) { try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {} }
-      return { ok: true, out: outPath, url: tweetUrl };
-    } catch (e) {
-      log(`⚠️ media/screenshot attempt ${attempt} failed: ${e.message}`);
-      if (attempt === 2) return { ok: false, reason: "media_not_loaded", error: e.message };
-      await page.reload({ waitUntil: "domcontentloaded", timeout: 45000 }).catch(() => {});
-      await page.waitForTimeout(800);
-    }
-  }
+  await loadTweet(page, tweetUrl);
+  await captureAndCompose(page, context, pngOut);
+  if (alsoWriteJpg && jpgOut) { try { fs.copyFileSync(pngOut, jpgOut); } catch (_) {} }
+  return { ok: true, out: outPath, url: tweetUrl };
 }
 
 async function createBrowser() {
