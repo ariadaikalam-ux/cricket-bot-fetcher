@@ -309,27 +309,22 @@ async function loadTweet(page, tweetUrl) {
   await page.evaluate(() => {
   const t = document.querySelector('[data-testid="tweet"]');
   if (t) t.scrollIntoView({ block: 'center' });
-  });
-  await page.waitForTimeout(1200);
+});
   // Wait for *actual* X media images to load (pbs/twimg), not only tweetPhoto selector.
-  // Wait for X media images to load
-  const mediaLoaded = await page.waitForFunction(() => {
+  await page.waitForFunction(() => {
     const tweet = document.querySelector('[data-testid="tweet"]');
     if (!tweet) return false;
-  
+
     const mediaImgs = Array.from(tweet.querySelectorAll('img')).filter(img => {
       const src = (img.getAttribute('src') || '');
       return src.includes('pbs.twimg.com/media') || src.includes('twimg.com/media');
     });
-  
+
+    // If we expect images (filter:images), don't assume text-only quickly.
     if (mediaImgs.length === 0) return false;
-  
+
     return mediaImgs.every(img => img.complete && img.naturalWidth > 0);
-  }, { timeout: 20000 })
-    .then(() => true)
-    .catch(() => false);
-  
-  if (!mediaLoaded) throw new Error(`media_not_loaded: ${tweetUrl}`);
+  }, { timeout: 20000 });
   await customizeAuthor(page);
   await replaceProfilePic(page);
 }
