@@ -23,8 +23,8 @@ IG_USER_ID      = os.environ["IG_USER_ID"]
 IG_ACCESS_TOKEN = os.environ["IG_ACCESS_TOKEN"]
 
 SLEEP_IG_CONTAINER_MIN = float(os.environ.get("SLEEP_IG_CONTAINER_MIN", "2.5"))
-SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "5.5"))
-SLEEP_BEFORE_PUBLISH   = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "15.0"))
+SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "9.5"))
+SLEEP_BEFORE_PUBLISH   = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "80.0"))
 VERIFY_WINDOW          = int(os.environ.get("VERIFY_WINDOW", "600"))
 
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
@@ -82,6 +82,10 @@ def request_with_retry(method, url, *, params=None, data=None,
 # -----------------------
 # Instagram Graph API
 # -----------------------
+def is_api_access_blocked(err: dict) -> bool:
+    msg = (err.get("message") or "").lower()
+    return "api access blocked" in msg
+
 def ig_create_image_container(image_url: str) -> Optional[str]:
     r = request_with_retry(
         "POST", f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media",
@@ -91,7 +95,11 @@ def ig_create_image_container(image_url: str) -> Optional[str]:
     )
     j = r.json()
     if "error" in j:
-        log(f"  ❌ IG container error: {j['error'].get('message', j)}")
+        err = j["error"]
+        if is_api_access_blocked(err):
+            log(f"🚫 API access blocked: {err.get('message')}")
+            raise SystemExit(2)
+        log(f"  ❌ IG container error: {err.get('message', err)}")
         return None
     return j.get("id")
 
@@ -105,55 +113,95 @@ def ig_create_carousel(children_ids: List[str], caption: str) -> Optional[str]:
     )
     j = r.json()
     if "error" in j:
-        log(f"  ❌ IG carousel error: {j['error'].get('message', j)}")
+        err = j["error"]
+        if is_api_access_blocked(err):
+            log(f"🚫 API access blocked: {err.get('message')}")
+            raise SystemExit(2)
+        log(f"  ❌ IG container error: {err.get('message', err)}")
         return None
     return j.get("id")
 
 def ig_publish(creation_id: str) -> Optional[str]:
     url  = f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media_publish"
     data = {"creation_id": creation_id, "access_token": IG_ACCESS_TOKEN}
-    for attempt in range(1, 4):
-        log(f"  ▶ Publish attempt {attempt}/3...")
-        r = request_with_retry("POST", url, data=data, timeout=30, tries=1)
-        j = r.json()
-        if "error" not in j and j.get("id"):
-            return j["id"]
-        log(f"  ⚠️  Attempt {attempt} failed: {j.get('error', {}).get('message', j)}")
-        if attempt < 3:
-            wait = 10 * (2 ** (attempt - 1))
-            log(f"  ⏳ Backing off {wait}s...")
-            time.sleep(wait)
-    return None
 
+    log("  ▶ Publishing (single attempt)...")
+    r = request_with_retry("POST", url, data=data, timeout=30, tries=1)
+
+    try:
+        j = r.json()
+    except Exception:
+        log(f"  ❌ Non-JSON response (status {r.status_code}): {r.text[:200]}")
+        return None
+
+    err = j.get("error")
+    if err:
+        if is_api_access_blocked(err):
+            log(f"🚫 API access blocked during publish: {err.get('message')}")
+            raise SystemExit(2)  # stop the run; don't keep calling more endpoints
+        log(f"  ❌ Publish error: {err.get('message', err)}")
+        return None
+
+    if j.get("id"):
+        return j["id"]
+
+    log(f"  ❌ Publish failed (unexpected response): {j}")
+    return None
+    
 def ig_verify_publish(this_caption: str, within_seconds: int = VERIFY_WINDOW) -> Optional[str]:
     log(f"🔍 Verifying publish (window: {within_seconds}s)...")
+
     try:
         r = request_with_retry(
-            "GET", f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media",
-            params={"fields": "id,caption,timestamp,media_type",
-                    "limit": 5, "access_token": IG_ACCESS_TOKEN},
-            timeout=30, tries=3
+            "GET",
+            f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media",
+            params={
+                "fields": "id,caption,timestamp,media_type",
+                "limit": 5,
+                "access_token": IG_ACCESS_TOKEN
+            },
+            timeout=30,
+            tries=3
         )
         j = r.json()
+        err = j.get("error")
+        if err:
+            if is_api_access_blocked(err):
+                log(f"🚫 API access blocked during verify: {err.get('message')}")
+                raise SystemExit(2)
+            log(f"  ❌ Verify error: {err.get('message', err)}")
+            return None
     except Exception as e:
         log(f"  ❌ Verify query failed: {e}")
         return None
 
     posts = j.get("data", [])
     now = datetime.now(timezone.utc)
+
+    # normalize caption comparison
+    target = (this_caption or "").strip()
+
     for p in posts:
-        if (p.get("media_type") or "").upper() not in ("CAROUSEL_ALBUM", "CAROUSEL"):
+        media_type = (p.get("media_type") or "").upper()
+        if media_type not in ("CAROUSEL_ALBUM", "CAROUSEL"):
             continue
+
         try:
             age = (now - parse_dt(p.get("timestamp", ""))).total_seconds()
-            if age <= within_seconds:
-                log(f"  ✅ Verified: {p['id']} is {age:.0f}s old")
-                return p["id"]
+            if age > within_seconds:
+                continue
         except Exception:
-            pass
-    log("  ❌ Verification failed — no recent carousel found")
-    return None
+            continue
 
+        caption = (p.get("caption") or "").strip()
+
+        # exact match OR contains match (safer for emojis/linebreaks)
+        if caption == target or target in caption:
+            log(f"  ✅ Verified by caption match: {p['id']} ({age:.0f}s old)")
+            return p["id"]
+
+    log("  ❌ Verification failed — no recent carousel with matching caption found")
+    return None
 
 # -----------------------
 # State helpers
@@ -274,7 +322,7 @@ def main():
     log(f"  ✅ Carousel id: {car_id}")
 
     # Step 6: Wait then publish
-    wait = SLEEP_BEFORE_PUBLISH + random.uniform(0, 8)
+    wait = SLEEP_BEFORE_PUBLISH + random.uniform(0, 60)
     log(f"⏳ Waiting {wait:.1f}s before publish...")
     time.sleep(wait)
 
