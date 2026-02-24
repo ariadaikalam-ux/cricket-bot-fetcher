@@ -1,26 +1,20 @@
 name: cricket-bot
-
 on:
   workflow_dispatch:
-
 concurrency:
   group: cricket-bot
   cancel-in-progress: true
-
 permissions:
   contents: write
-
 jobs:
   run:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      # -------- Python (cached) --------
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -30,14 +24,12 @@ jobs:
       - name: Install Python deps
         run: pip install -r requirements.txt
 
-      # -------- Node (cached) --------
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      # -------- Playwright browsers cache --------
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
@@ -49,38 +41,19 @@ jobs:
       - name: Install Node deps
         run: npm ci
 
-      # First run may still download Chromium; later runs restore from cache
       - name: Install Playwright Chromium
         run: npx playwright install chromium
 
-      # If you ever see missing libraries error, switch to:
-      # run: npx playwright install --with-deps chromium
-
-      - name: Run bot
+      - name: Run bot (fetch + screenshot + imgur only)
         env:
           SOCIALDATA_API_KEY: ${{ secrets.SOCIALDATA_API_KEY }}
-          IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
+          IMGUR_CLIENT_ID:    ${{ secrets.IMGUR_CLIENT_ID }}
           TWITTER_ACCOUNTS: "mufaddal_vohra,cricketgyann,wxtreme18,rcbtweets,chennaiipl,ctrlmemes_,mipaltan,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar,gemsofcricket,mohalimonster,mahi_patel_07,1no_aalsi_,vipintiwari952,justtalkcricket,vikrant_1589,selflesscricket"
-          TWEET_THRESHOLD: "10"
+          THRESHOLD: "9"
           DRY_RUN: "0"
-          DEBUG: "1"
+          DEBUG: "0"
           SHOW_STATS: "0"
-          # For quick end-to-end test (temporarily):
-          # FORCE_TEST: "1"
-          # TWEET_THRESHOLD: "2"
-          # DRY_RUN: "1"
         run: python bot.py
 
-      - name: Commit updated state.json
-        run: |
-          git config user.name "cricket-bot"
-          git config user.email "cricket-bot@users.noreply.github.com"
-          git add state.json
-          if git diff --cached --quiet; then
-            echo "No changes"
-            exit 0
-          fi
-          git commit -m "Update bot state"
-          git push
+      # Note: bot.py now handles its own git push of pending_post.json + state.json
+      # No separate commit step needed here
