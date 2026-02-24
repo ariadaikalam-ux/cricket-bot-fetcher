@@ -164,10 +164,7 @@ async function forceWhiteCss(page) {
       }
       [data-testid="tweetText"] {
         margin-top: 16px !important;
-        display: -webkit-box !important;
-        -webkit-line-clamp: 9 !important;
-        -webkit-box-orient: vertical !important;
-        overflow: hidden !important;
+        
       }
     `,
   });
@@ -229,35 +226,59 @@ function buildCanvasHtml(rawB64) {
 
 async function captureAndCompose(page, context, pngOut) {
   const tweetEl = await page.locator('[data-testid="tweet"]').first();
+
+  // Step 1: Expand viewport to fit full tweet height
+  const fullTweetHeight = await page.evaluate(() => {
+    const tweet = document.querySelector('[data-testid="tweet"]');
+    if (!tweet) return 900;
+    return Math.ceil(tweet.getBoundingClientRect().bottom) + 20;
+  });
+  await page.setViewportSize({ width: 600, height: Math.max(900, fullTweetHeight) });
+
+  // Step 2: Re-measure bounding box after viewport expansion
   const box = await tweetEl.boundingBox();
   if (!box) throw new Error("Could not find tweet bounding box");
 
-  const metricsY = await page.evaluate(() => {
+  // Step 3: Find crop point — just before timestamp row or engagement bar
+  const cropH = await page.evaluate(() => {
     const tweet = document.querySelector('[data-testid="tweet"]');
     if (!tweet) return null;
     const tweetRect = tweet.getBoundingClientRect();
 
-    const timeEl = tweet.querySelector("time");
+    // Try timestamp row first ("8:33 AM · Feb 24" line)
+    const timeEl = tweet.querySelector('time');
     if (timeEl) {
       let row = timeEl;
-      for (let i = 0; i < 6; i++) { const p = row.parentElement; if (!p || p === tweet) break; row = p; }
+      for (let i = 0; i < 8; i++) {
+        const p = row.parentElement;
+        if (!p || p === tweet) break;
+        if (p.getBoundingClientRect().width >= tweetRect.width * 0.8) { row = p; break; }
+        row = p;
+      }
       const r = row.getBoundingClientRect();
-      if (r.top > tweetRect.top && r.height > 0) return r.top;
+      if (r.top > tweetRect.top + 50) {
+        return r.top - tweetRect.top;
+      }
     }
+
+    // Fallback: engagement bar (reply/like/retweet)
     for (const g of tweet.querySelectorAll('[role="group"]')) {
       if (g.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"]')) {
         const r = g.getBoundingClientRect();
-        if (r.top > tweetRect.top && r.height > 0) return r.top;
+        if (r.top > tweetRect.top + 50 && r.height > 0) {
+          return r.top - tweetRect.top;
+        }
       }
     }
-    return null;
+
+    return tweetRect.height;
   });
 
-  const cropBottomCss = metricsY !== null ? (metricsY - box.y) : box.height;
-  log(`  metricsY=${metricsY?.toFixed(0) ?? 'null'} | box.y=${box.y.toFixed(0)} | cropBottomCss=${cropBottomCss.toFixed(0)}`);
+  const finalCropH = Math.max(50, cropH ?? box.height);
+  log(`  viewport=${fullTweetHeight}px | box.height=${box.height.toFixed(0)} | cropH=${finalCropH.toFixed(0)}`);
 
+  // Step 4: Take the raw screenshot
   const rawPath = pngOut.replace(/\.png$/i, "") + ".raw.png";
-
   await page.screenshot({
     path: rawPath,
     type: "png",
@@ -265,22 +286,21 @@ async function captureAndCompose(page, context, pngOut) {
       x: box.x,
       y: box.y,
       width: box.width,
-      height: Math.max(50, cropBottomCss),
+      height: finalCropH,
     },
   });
 
   if (!fs.existsSync(rawPath)) throw new Error("Raw screenshot did not write");
 
+  // Step 5: Compose onto 4:5 canvas
   const rawB64 = fs.readFileSync(rawPath).toString("base64");
   const page2 = await context.newPage();
   await page2.setViewportSize({ width: FINAL_W, height: FINAL_H });
-  // ── CHANGED: removed waitForTimeout(80) — waitUntil:"load" is sufficient
   await page2.setContent(buildCanvasHtml(rawB64), { waitUntil: "load" });
   await page2.screenshot({ path: pngOut, type: "png" });
   await page2.close();
   try { fs.unlinkSync(rawPath); } catch (_) {}
 }
-
 // ── CHANGED: replaced blind 2500+300ms sleeps with smart image-load wait ──
 async function loadTweet(page, tweetUrl) {
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
