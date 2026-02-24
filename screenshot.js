@@ -306,6 +306,7 @@ async function loadTweet(page, tweetUrl) {
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
   await waitForTweetContent(page);
   await forceWhiteCss(page);
+  await page.waitForTimeout(600);
 
   // Wait for tweet images to actually finish loading instead of sleeping
   // NEW — Phase 1: wait for photo containers to actually appear in DOM (5s grace)
