@@ -25,7 +25,7 @@ ACCOUNTS = [a.strip() for a in TWITTER_ACCOUNTS.split(",") if a.strip()]
 
 THRESHOLD = int(os.environ.get("THRESHOLD", "9"))
 DRY_RUN    = os.environ.get("DRY_RUN", "0") == "1"
-DEBUG      = os.environ.get("DEBUG", "1") == "1"
+DEBUG      = os.environ.get("DEBUG", "0") == "1"
 SHOW_STATS = os.environ.get("SHOW_STATS", "0") == "1"
 
 # Two alternating captions
