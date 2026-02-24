@@ -308,11 +308,23 @@ async function loadTweet(page, tweetUrl) {
   await forceWhiteCss(page);
 
   // Wait for tweet images to actually finish loading instead of sleeping
-  await page.waitForFunction(() => {
-    const imgs = Array.from(document.querySelectorAll('[data-testid="tweetPhoto"] img'));
-    if (!imgs.length) return true; // text-only tweet, nothing to wait for
-    return imgs.every(img => img.complete && img.naturalWidth > 0);
-  }, { timeout: 10000 }).catch(() => {}); // soft timeout — don't fail if slow
+  // NEW — Phase 1: wait for photo containers to actually appear in DOM (5s grace)
+//        Phase 2: once found, wait for the imgs inside to finish loading
+  try {
+    await page.waitForSelector('[data-testid="tweetPhoto"] img', {
+      timeout: 5000,
+      state: "visible",
+    });
+    // Photo containers appeared — now wait for pixel data
+    await page.waitForFunction(() => {
+      const imgs = Array.from(
+        document.querySelectorAll('[data-testid="tweetPhoto"] img')
+      );
+      return imgs.length > 0 && imgs.every(i => i.complete && i.naturalWidth > 0);
+    }, { timeout: 12000 });
+  } catch (_) {
+    // Text-only tweet or images too slow — continue without blocking
+  }
 
   await customizeAuthor(page);
   await replaceProfilePic(page);
