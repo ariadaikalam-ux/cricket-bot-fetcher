@@ -11,7 +11,7 @@ import re
 from collections import defaultdict
 import hashlib
 
-# -----------------------
+# ----------------------
 # Env / Config
 # -----------------------
 SOCIALDATA_API_KEY = os.environ["SOCIALDATA_API_KEY"]
