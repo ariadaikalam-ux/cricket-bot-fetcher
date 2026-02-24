@@ -51,8 +51,8 @@ jobs:
           TWITTER_ACCOUNTS: "mufaddal_vohra,cricketgyann,wxtreme18,rcbtweets,chennaiipl,ctrlmemes_,mipaltan,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar,gemsofcricket,mohalimonster,mahi_patel_07,1no_aalsi_,vipintiwari952,justtalkcricket,vikrant_1589,selflesscricket"
           THRESHOLD: "9"
           DRY_RUN: "0"
-          DEBUG: "0"
-          SHOW_STATS: "0"
+          DEBUG: "1"
+          SHOW_STATS: "1"
         run: python bot.py
 
       # Note: bot.py now handles its own git push of pending_post.json + state.json
