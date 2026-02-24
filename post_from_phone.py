@@ -275,7 +275,7 @@ def main():
     try:
         age_hours = (datetime.now(timezone.utc) - parse_dt(created_at)).total_seconds() / 3600
         log(f"  pending_post.json is {age_hours:.1f}h old")
-        if age_hours > 4:
+        if age_hours > 10:
             log("  ⚠️  Job is stale (>4h) — skipping and removing.")
             if os.path.exists(PENDING_FILE):
                 os.remove(PENDING_FILE)
