@@ -62,7 +62,7 @@ jobs:
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
-          TWITTER_ACCOUNTS: "mufaddal_vohra,cricketgyann,wxtreme18,rcbtweets,chennaiipl,ctrlmemes_,mipaltan,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar,gemsofcricket,mohalimonster,mahi_patel_07,1no_aalsi_,vipintiwari952,justtalkcricket,vikrant_1589,selflesscricket"
+          TWITTER_ACCOUNTS: "mufaddal_vohra,cricketgyann,wxtreme18,rcbtweets,chennaiipl,ctrlmemes_,mipaltan,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar,gemsofcricket,mohalimonster,mahi_patel_07,1no_aalsi_,vipintiwari952,vikrant_1589,selflesscricket"
           TWEET_THRESHOLD: "10"
           DRY_RUN: "0"
           DEBUG: "1"
