@@ -1379,43 +1379,6 @@ def ig_get_status(creation_id: str) -> Tuple[Optional[str], Optional[dict]]:
     except Exception as e:
         return None, {"exception": str(e)}
 
-
-def ig_wait_until_ready(
-    creation_id: str,
-    *,
-    timeout_s: int = 180,
-    poll_s: float = 3.0,
-    label: str = "container",
-) -> bool:
-    """
-    Poll until container status becomes FINISHED.
-    Return False if ERROR/EXPIRED or timeout.
-    """
-    t0 = time.time()
-    while True:
-        status, raw = ig_get_status(creation_id)
-
-        if status:
-            status_u = str(status).upper()
-            dbg(f"{label} {creation_id} status={status_u}")
-
-            if status_u == "FINISHED":
-                log(f"  ✅ {label} ready: {creation_id}")
-                return True
-
-            if status_u in ("ERROR", "EXPIRED"):
-                log(f"  ❌ {label} failed: {creation_id} status={status_u}")
-                dbg(f"  raw: {raw}")
-                return False
-        else:
-            log(f"  ⚠️  status check failed for {label} {creation_id}")
-            dbg(f"  raw: {raw}")
-
-        if time.time() - t0 > timeout_s:
-            log(f"  ❌ timeout waiting for {label} {creation_id} ({timeout_s}s)")
-            return False
-
-        time.sleep(poll_s)
 # -----------------------
 # Cleanup
 # -----------------------
@@ -1600,15 +1563,21 @@ def main():
                 env = os.environ.copy()
                 env["SHOW_STATS"] = "1" if SHOW_STATS else "0"
                 try:
-                    result = subprocess.run(cmd, timeout=240, capture_output=True,
-                                            text=True, env=env)
-                    if result.returncode != 0:
+                    stdout_lines = []
+                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                               text=True, env=env)
+                    for line in process.stdout:
+                        print(line, end="", flush=True)   # streams to Actions log in real time
+                        stdout_lines.append(line)
+                    process.wait()
+                    result_stdout = "".join(stdout_lines)
+                    
+                    if process.returncode != 0:
                         log("❌ screenshot batch failed")
-                        log(f"  stderr: {result.stderr[:1200]}")
                     else:
                         marker = "__BATCH_RESULT__"
                         parsed = False
-                        for line in result.stdout.splitlines():
+                        for line in result_stdout.splitlines():
                             if line.startswith(marker):
                                 parsed = True
                                 data = json.loads(line[len(marker):])
@@ -1626,7 +1595,9 @@ def main():
                                         os.path.basename(it["out"]))[0]
                                     good_pairs.append((t, it["out"]))
                         log(f"  ✅ {len(good_pairs)} screenshots ready")
+                    
                 except subprocess.TimeoutExpired:
+                    process.kill()
                     log("❌ screenshot batch timeout")
                 except Exception as e:
                     log(f"❌ screenshot batch error: {e}")
