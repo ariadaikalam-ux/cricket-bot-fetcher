@@ -246,9 +246,7 @@ HASHTAG_RULES = (
 FALLBACK_HASHTAGS = [
     "#CricketUpdates", "#CricketHighlights", "#T20", "#ODI", "#TestCricket", "#Sports"
 ]
-MAX_DYNAMIC_HASHTAGS = int(os.environ.get("MAX_DYNAMIC_HASHTAGS", "5"))
-MIN_TOTAL_HASHTAGS = int(os.environ.get("MIN_TOTAL_HASHTAGS", "9"))
-MAX_TOTAL_HASHTAGS = int(os.environ.get("MAX_TOTAL_HASHTAGS", "9"))
+
 FIXED_HASHTAG_COUNT = 4
 DYNAMIC_HASHTAG_COUNT = 5
 TOTAL_HASHTAGS = FIXED_HASHTAG_COUNT + DYNAMIC_HASHTAG_COUNT  # 9
@@ -696,6 +694,17 @@ def build_hashtags_for_batch(
     TEAM_TAGS = {
         "#rcb","#csk","#mi","#kkr","#srh","#dc","#rr","#pbks","#gt","#lsg","#upw","#gg"
     }
+    # Build a strict allowlist of player hashtags from your rule outputs.
+    # This prevents misclassifying arbitrary hashtags as players.
+    PLAYER_TAGS = set()
+    for _pat, _tags in (PLAYER_RULES + WOMEN_PLAYER_RULES):
+        for _tg in _tags:
+            nt = _tg.strip()
+            if not nt:
+                continue
+            if not nt.startswith("#"):
+                nt = "#" + nt
+            PLAYER_TAGS.add(nt.lower())
 
     def bucket_for(tag: str) -> str:
         tl = tag.lower()
@@ -707,9 +716,7 @@ def build_hashtags_for_batch(
             return "team"
         if tl in INTL_TAGS:
             return "intl"
-        # If it looks like a player name hashtag, treat as player
-        # (Most of your player tags are like #ViratKohli etc.)
-        if re.match(r"^#[A-Za-z][A-Za-z0-9]+$", tag) and tl not in LEAGUE_TAGS and tl not in TEAM_TAGS and tl not in INTL_TAGS:
+        if tl in PLAYER_TAGS:
             return "player"
         return "other"
 
