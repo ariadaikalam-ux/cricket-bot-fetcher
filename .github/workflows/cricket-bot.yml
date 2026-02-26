@@ -51,7 +51,7 @@ jobs:
 
       # First run may still download Chromium; later runs restore from cache
       - name: Install Playwright Chromium
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       # If you ever see missing libraries error, switch to:
       # run: npx playwright install --with-deps chromium
@@ -63,7 +63,7 @@ jobs:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           TWITTER_ACCOUNTS: "mufaddal_vohra,cricketgyann,wxtreme18,rcbtweets,chennaiipl,ctrlmemes_,mipaltan,criccrazyjohns,cricketcentrl,tuktuk_academy,shebas_10dulkar,gemsofcricket,mohalimonster,mahi_patel_07,1no_aalsi_,vipintiwari952,vikrant_1589,selflesscricket"
-          TWEET_THRESHOLD: "10"
+          TWEET_THRESHOLD: "9"
           DRY_RUN: "0"
           DEBUG: "1"
           SHOW_STATS: "0"
