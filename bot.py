@@ -71,9 +71,9 @@ LEAGUE_RULES = [
 
 # IPL teams
 IPL_TEAM_RULES = [
-    (r"\b(rcb|royal challengers|bangalore)\b", ["#RCB"]),
-    (r"\b(csk|chennai|super kings)\b", ["#CSK"]),
-    (r"\b(mi|mumbai indians)\b", ["#MI"]),
+    (r"\b(rcb|royal challengers|bangalore|playbold)\b", ["#RCB"]),
+    (r"\b(csk|chennai|super kings|whistlepodu)\b", ["#CSK"]),
+    (r"\b(mi|mumbai indians|paltans)\b", ["#MI"]),
     (r"\b(kkr|kolkata|knight riders)\b", ["#KKR"]),
     (r"\b(srh|sunrisers|hyderabad)\b", ["#SRH"]),
     (r"\b(dc|delhi capitals)\b", ["#DC"]),
@@ -85,11 +85,11 @@ IPL_TEAM_RULES = [
 
 # WPL teams
 WPL_TEAM_RULES = [
-    (r"\b(mi women|mumbai indians women)\b", ["#MI"]),
-    (r"\b(rcb women|royal challengers women)\b", ["#RCB"]),
-    (r"\b(dc women|delhi capitals women)\b", ["#DC"]),
-    (r"\b(upw|up warriorz|uttar pradesh warriorz)\b", ["#UPW"]),
-    (r"\b(gg|gujarat giants)\b", ["#GG"]),
+    (r"\b(mi women|mumbai indians women|miw)\b", ["#MI"]),
+    (r"\b(rcb women|royal challengers women|rcbw)\b", ["#RCB"]),
+    (r"\b(dc women|delhi capitals women|dcw)\b", ["#DC"]),
+    (r"\b(upw|up warriorz|uttar pradesh warriorz|upww)\b", ["#UPW"]),
+    (r"\b(gg|gujarat giants|ggw)\b", ["#GG"]),
 ]
 
 # BBL teams
@@ -244,7 +244,7 @@ HASHTAG_RULES = (
 )
 
 FALLBACK_HASHTAGS = [
-    "#CricketUpdates", "#CricketHighlights", "#T20", "#ODI", "#TestCricket", "#Sports"
+    "#kohli", "#rohit", "#dhoni", "#ipl", "#virat", "#sports"
 ]
 
 FIXED_HASHTAG_COUNT = 4
@@ -665,8 +665,19 @@ def build_hashtags_for_batch(
     DYN_N   = DYNAMIC_HASHTAG_COUNT
     TOTAL_N = TOTAL_HASHTAGS
     INTL_TAGS = {
-    "#teamindia","#aus","#eng","#pak","#proteas","#nz","#srilanka","#bangladesh",
-    "#afghanistan","#westindies","#ireland","#scotland","#zimbabwe","#nepal","#uae"
+        "#teamindia","#aus","#eng","#pak","#proteas","#nz","#srilanka","#bangladesh",
+        "#afghanistan","#westindies","#ireland","#scotland","#zimbabwe","#nepal","#uae"
+    }
+    
+    LEAGUE_TAGS = {
+        "#ipl","#wpl","#bbl","#wbbl","#sa20","#thehundred","#psl","#ilt20","#cpl",
+        "#mlc","#lpl","#bpl","#supersmash","#countycricket","#worldcup"
+    }
+    
+    FORMAT_TAGS = {"#t20","#t20i","#odi","#testcricket"}
+    
+    TEAM_TAGS = {
+        "#rcb","#csk","#mi","#kkr","#srh","#dc","#rr","#pbks","#gt","#lsg","#upw","#gg"
     }
     BUCKET_LIMITS = {
     "league": 1,
@@ -682,18 +693,12 @@ def build_hashtags_for_batch(
         x = (x or "").strip()
         if not x:
             return ""
-        return x if x.startswith("#") else "#" + x
+        if not x.startswith("#"):
+            x = "#" + x
+        return x.lower()
 
     # ---- helper: bucket classifier (based on tag text) ----
     # We bucket by *output hashtag*, not by regex source, so it’s robust.
-    LEAGUE_TAGS = {
-        "#ipl","#wpl","#bbl","#wbbl","#sa20","#thehundred","#psl","#ilt20","#cpl",
-        "#mlc","#lpl","#bpl","#supersmash","#countycricket","#worldcup"
-    }
-    FORMAT_TAGS = {"#t20","#t20i","#odi","#testcricket"}
-    TEAM_TAGS = {
-        "#rcb","#csk","#mi","#kkr","#srh","#dc","#rr","#pbks","#gt","#lsg","#upw","#gg"
-    }
     # Build a strict allowlist of player hashtags from your rule outputs.
     # This prevents misclassifying arbitrary hashtags as players.
     PLAYER_TAGS = set()
@@ -813,28 +818,27 @@ def build_hashtags_for_batch(
     return out
     
 def strip_hash(tag: str) -> str:
-    tag = (tag or "").strip()
+    tag = (tag or "").strip().lower()
     if tag.startswith("#"):
         tag = tag[1:]
     return tag.strip()
 
 def tags_without_hash(hashtags: List[str]) -> List[str]:
-    # preserve order, de-dupe (case-insensitive)
+    # preserve order, de-dupe (case-insensitive), output lowercase
     out = []
     seen = set()
     for h in hashtags:
-        t = strip_hash(h)
+        t = strip_hash(h)  # already lowercased
         if not t:
             continue
-        key = t.lower()
-        if key in seen:
+        if t in seen:
             continue
-        seen.add(key)
+        seen.add(t)
         out.append(t)
     return out
     
 def build_caption_with_hashtags(base_caption: str, hashtags: List[str]) -> str:
-    hash_line = " ".join(hashtags).strip()
+    hash_line = " ".join(hashtags).lower().strip()
 
     plain_tags = tags_without_hash(hashtags)
     plain_line = " ".join(plain_tags).strip()
