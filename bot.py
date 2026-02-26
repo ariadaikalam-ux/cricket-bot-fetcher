@@ -246,9 +246,9 @@ HASHTAG_RULES = (
 FALLBACK_HASHTAGS = [
     "#CricketUpdates", "#CricketHighlights", "#T20", "#ODI", "#TestCricket", "#Sports"
 ]
-MAX_DYNAMIC_HASHTAGS = int(os.environ.get("MAX_DYNAMIC_HASHTAGS", "4"))
-MIN_TOTAL_HASHTAGS = int(os.environ.get("MIN_TOTAL_HASHTAGS", "7"))
-MAX_TOTAL_HASHTAGS = int(os.environ.get("MAX_TOTAL_HASHTAGS", "8"))
+MAX_DYNAMIC_HASHTAGS = int(os.environ.get("MAX_DYNAMIC_HASHTAGS", "5"))
+MIN_TOTAL_HASHTAGS = int(os.environ.get("MIN_TOTAL_HASHTAGS", "9"))
+MAX_TOTAL_HASHTAGS = int(os.environ.get("MAX_TOTAL_HASHTAGS", "9"))
 FIXED_HASHTAG_COUNT = 4
 DYNAMIC_HASHTAG_COUNT = 5
 TOTAL_HASHTAGS = FIXED_HASHTAG_COUNT + DYNAMIC_HASHTAG_COUNT  # 9
