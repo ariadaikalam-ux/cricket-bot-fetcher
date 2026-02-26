@@ -811,11 +811,44 @@ def build_hashtags_for_batch(
                 out.append(nt)
 
     return out
+    
+def strip_hash(tag: str) -> str:
+    tag = (tag or "").strip()
+    if tag.startswith("#"):
+        tag = tag[1:]
+    return tag.strip()
+
+def tags_without_hash(hashtags: List[str]) -> List[str]:
+    # preserve order, de-dupe (case-insensitive)
+    out = []
+    seen = set()
+    for h in hashtags:
+        t = strip_hash(h)
+        if not t:
+            continue
+        key = t.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(t)
+    return out
+    
 def build_caption_with_hashtags(base_caption: str, hashtags: List[str]) -> str:
-    tags = " ".join(hashtags).strip()
-    if not tags:
+    hash_line = " ".join(hashtags).strip()
+
+    plain_tags = tags_without_hash(hashtags)
+    plain_line = " ".join(plain_tags).strip()
+
+    if not hash_line and not plain_line:
         return base_caption.strip()
-    return f"{base_caption.strip()}\n\n{tags}"
+
+    parts = [base_caption.strip(), "", "", "•", ""]
+    if plain_line:
+        parts.append(f"•[{plain_line}]\n")  # tags without '#'
+    if hash_line:
+        parts.append(f"•{hash_line}")
+    
+    return "\n".join(parts).strip()
 # -----------------------
 # OR-query chunking
 # -----------------------
