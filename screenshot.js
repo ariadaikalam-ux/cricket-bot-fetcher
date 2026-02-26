@@ -304,6 +304,17 @@ async function captureAndCompose(page, context, pngOut) {
 // ── CHANGED: replaced blind 2500+300ms sleeps with smart image-load wait ──
 async function loadTweet(page, tweetUrl) {
   await page.goto(tweetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+  // Add after page.goto line
+  page.on('response', response => {
+    const url = response.url();
+    const status = response.status();
+    if (url.includes('twimg.com') && status !== 200) {
+      log(`🚫 BLOCKED image: ${status} ${url}`);
+    }
+    if (url.includes('twimg.com') && url.includes('/media/')) {
+      log(`📸 media response: ${status} ${url}`);
+    }
+  });
   await waitForTweetContent(page);
   await forceWhiteCss(page);
   await page.waitForTimeout(600);
