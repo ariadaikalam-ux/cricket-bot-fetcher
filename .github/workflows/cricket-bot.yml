@@ -72,7 +72,16 @@ jobs:
           # TWEET_THRESHOLD: "2"
           # DRY_RUN: "1"
         run: python bot.py
-
+      - name: Upload screenshots (debug)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-debug
+          path: |
+            *.png
+            *.jpg
+            *.raw.png
+          retention-days: 1
       - name: Commit updated state.json
         run: |
           git config user.name "cricket-bot"
