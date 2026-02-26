@@ -35,7 +35,39 @@ CAPTIONS = [
     os.environ.get("INSTAGRAM_CAPTION_0", "🏏 Latest Cricket Tweets Roundup!"),
     os.environ.get("INSTAGRAM_CAPTION_1", "🏏 Best Cricket Tweets Right Now!"),
 ]
+# ----------------------
+# Hashtags: fixed + dynamic-from-text
+# ----------------------
+FIXED_HASHTAGS = [
+    "#cricket", "#CricketTwitter", "#IPL"
+]
 
+# Rules: if any keyword/regex matches any tweet text in the batch,
+# add the associated hashtag(s).
+HASHTAG_RULES = [
+    (r"\b(rcb|royal challengers|kohli|virat)\b",        ["#RCB", "#ViratKohli"]),
+    (r"\b(csk|chennai|dhoni|msd)\b",                    ["#CSK", "#MSDhoni"]),
+    (r"\b(mi|mumbai indians|rohit)\b",                  ["#MI", "#RohitSharma"]),
+    (r"\b(kkr|kolkata knight riders)\b",                ["#KKR"]),
+    (r"\b(srh|sunrisers|hyderabad)\b",                  ["#SRH"]),
+    (r"\b(dc|delhi capitals)\b",                        ["#DC"]),
+    (r"\b(rr|rajasthan royals)\b",                      ["#RR"]),
+    (r"\b(pbks|punjab kings|kxip)\b",                   ["#PBKS"]),
+
+    (r"\b(india|team india|ind)\b",                     ["#TeamIndia"]),
+    (r"\b(australia|aus)\b",                            ["#AUS"]),
+    (r"\b(england|eng)\b",                              ["#ENG"]),
+    (r"\b(pakistan|pak)\b",                             ["#PAK"]),
+    (r"\b(south africa|sa)\b",                          ["#Proteas"]),
+    (r"\b(new zealand|nz)\b",                           ["#NZ"]),
+
+    (r"\b(test match|tests)\b",                         ["#TestCricket"]),
+    (r"\b(odi|one day)\b",                              ["#ODI"]),
+    (r"\b(t20|t-?20)\b",                                ["#T20"]),
+    (r"\b(world cup|wc)\b",                             ["#WorldCup"]),
+]
+
+MAX_DYNAMIC_HASHTAGS = int(os.environ.get("MAX_DYNAMIC_HASHTAGS", "4"))
 # Tuning
 SLEEP_IG_CONTAINER_MIN = float(os.environ.get("SLEEP_IG_CONTAINER_MIN", "2.5"))
 SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "5.5"))
@@ -428,7 +460,70 @@ def pick_caption(state: Dict[str, Any]) -> Tuple[str, int]:
     next_index = (last_index + 1) % len(CAPTIONS)
     return CAPTIONS[next_index], next_index
 
+def extract_tweet_text(t: Dict[str, Any]) -> str:
+    return (t.get("full_text") or t.get("text") or "").strip()
 
+def build_hashtags_for_batch(
+    batch_ids: List[str],
+    tweet_data: Dict[str, Any],
+) -> List[str]:
+    """
+    Returns final hashtag list (strings like '#CSK') consisting of:
+      - FIXED_HASHTAGS (always)
+      - dynamic tags picked by scanning tweet texts for keyword matches
+    Deduped, and capped to MAX_DYNAMIC_HASHTAGS for the dynamic portion.
+    """
+    texts = []
+    for tid in batch_ids:
+        t = tweet_data.get(tid)
+        if isinstance(t, dict):
+            txt = extract_tweet_text(t)
+            if txt:
+                texts.append(txt.lower())
+
+    blob = "\n".join(texts)
+
+    # collect dynamic tags
+    dynamic: List[str] = []
+    for pattern, tags in HASHTAG_RULES:
+        try:
+            if re.search(pattern, blob, flags=re.IGNORECASE):
+                dynamic.extend(tags)
+        except re.error:
+            # ignore bad regex patterns rather than crashing
+            continue
+
+    # normalize/dedupe while preserving order
+    def norm_tag(x: str) -> str:
+        x = (x or "").strip()
+        if not x:
+            return ""
+        return x if x.startswith("#") else "#" + x
+
+    seen = set()
+    fixed_out = []
+    for t in FIXED_HASHTAGS:
+        nt = norm_tag(t)
+        if nt and nt.lower() not in seen:
+            fixed_out.append(nt)
+            seen.add(nt.lower())
+
+    dyn_out = []
+    for t in dynamic:
+        nt = norm_tag(t)
+        if nt and nt.lower() not in seen:
+            dyn_out.append(nt)
+            seen.add(nt.lower())
+
+    dyn_out = dyn_out[:MAX_DYNAMIC_HASHTAGS]
+
+    return fixed_out + dyn_out
+
+def build_caption_with_hashtags(base_caption: str, hashtags: List[str]) -> str:
+    tags = " ".join(hashtags).strip()
+    if not tags:
+        return base_caption.strip()
+    return f"{base_caption.strip()}\n\n{tags}"
 # -----------------------
 # OR-query chunking
 # -----------------------
@@ -750,6 +845,8 @@ def fetch_and_enqueue(
                 ok, reason = passes_filters(
                     t, cutoff_dt, posted_set, queued_set, seen_set, content_hashes
                 )
+                if (not ok) and DEBUG:
+                    log(f"  [REJECT] @{author} tid={tid} reason={reason}")
     
                 if tid:
                     seen_set.add(tid)
@@ -812,10 +909,12 @@ def fetch_and_enqueue(
 
     log(
         f"  Filter summary — added: {counts['added']} | "
+        f"seen: {counts['seen']} | "
         f"near_dup_text: {counts['near_dup_text']} | "
         f"reply: {counts['reply']} | quote: {counts['quote']} | "
         f"retweet: {counts['retweet']} | video: {counts['video']} | "
         f"no_photo: {counts['no_photo']} | old: {counts['old']} | "
+        f"no_id: {counts['no_id']} | no_time: {counts['no_time']} | bad_time: {counts['bad_time']} | "
         f"dupe(posted/queued): {counts['posted'] + counts['queued']}"
     )
     log(f"  all_chunks_completed={all_chunks_completed} | any_tweets_returned={any_tweets_returned}")
@@ -1176,7 +1275,11 @@ def main():
 
     # ── 3) Prepare batch ───────────────────────────────────────────────────
     batch = state["queue"][:THRESHOLD]
+    batch_hashtags = build_hashtags_for_batch(batch, tweet_data)
+    final_caption = build_caption_with_hashtags(this_caption, batch_hashtags)
     log(f"Batch: {len(batch)} tweets (sample: {batch[:3]})")
+    log(f"Hashtags: {' '.join(batch_hashtags)}")
+    log(f"Final caption len: {len(final_caption)}")
 
     # ── 4) Render screenshots ──────────────────────────────────────────────
     with StageTimer("3) Render screenshots"):
@@ -1283,7 +1386,7 @@ def main():
 
     # ── 7) Create carousel ─────────────────────────────────────────────────
     with StageTimer("6) Create carousel"):
-        car_id = ig_create_carousel(container_ids, this_caption)
+        car_id = ig_create_carousel(container_ids, final_caption)
         if not car_id:
             log("❌ Carousel create failed. Keeping queue. Exiting.")
             log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
@@ -1311,8 +1414,8 @@ def main():
         if not post_id:
             log(f"⏳ All attempts failed. Waiting {VERIFY_WAIT}s then verifying...")
             time.sleep(VERIFY_WAIT)
-            post_id = ig_verify_publish(this_caption, last_caption_text,
-                                        within_seconds=VERIFY_WINDOW)
+            post_id = ig_verify_publish(final_caption, last_caption_text,
+                            within_seconds=VERIFY_WINDOW)
             if not post_id:
                 log("❌ Publish failed + verification negative. Keeping queue. Exiting.")
                 log(f"[TOTAL] {perf_counter() - total_t0:.2f}s")
@@ -1336,7 +1439,7 @@ def main():
         state["total_carousels"]    = int(state.get("total_carousels", 0)) + 1
         state["in_flight"]          = []
         state["last_caption_index"] = this_caption_index
-        state["last_caption_text"]  = this_caption
+        state["last_caption_text"] = final_caption
         # ⚠️  last_post_time = AUDIT-ONLY. Records when IG publish succeeded.
         #     Never read this for fetch cutoff — use checked_until_time only.
         state["last_post_time"]     = utc_now_iso()
