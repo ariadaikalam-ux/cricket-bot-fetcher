@@ -252,8 +252,8 @@ DYNAMIC_HASHTAG_COUNT = 5
 TOTAL_HASHTAGS = FIXED_HASHTAG_COUNT + DYNAMIC_HASHTAG_COUNT  # 9
 # Tuning
 SLEEP_IG_CONTAINER_MIN = float(os.environ.get("SLEEP_IG_CONTAINER_MIN", "2.5"))
-SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "5.5"))
-SLEEP_BEFORE_PUBLISH   = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "15.0"))
+SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "10.5"))
+SLEEP_BEFORE_PUBLISH   = float(os.environ.get("SLEEP_BEFORE_PUBLISH", "20.0"))
 SLEEP_IMGUR            = float(os.environ.get("SLEEP_IMGUR", "0.5"))
 VERIFY_WAIT            = float(os.environ.get("VERIFY_WAIT", "8.0"))
 VERIFY_WINDOW          = int(os.environ.get("VERIFY_WINDOW", "600"))
