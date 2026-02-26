@@ -39,35 +39,219 @@ CAPTIONS = [
 # Hashtags: fixed + dynamic-from-text
 # ----------------------
 FIXED_HASHTAGS = [
-    "#cricket", "#CricketTwitter", "#IPL"
+    "#cricket", "#CricketTwitter", "#IPL", "#CricketNews"
 ]
-
 # Rules: if any keyword/regex matches any tweet text in the batch,
 # add the associated hashtag(s).
-HASHTAG_RULES = [
-    (r"\b(rcb|royal challengers|kohli|virat)\b",        ["#RCB", "#ViratKohli"]),
-    (r"\b(csk|chennai|dhoni|msd)\b",                    ["#CSK", "#MSDhoni"]),
-    (r"\b(mi|mumbai indians|rohit)\b",                  ["#MI", "#RohitSharma"]),
-    (r"\b(kkr|kolkata knight riders)\b",                ["#KKR"]),
-    (r"\b(srh|sunrisers|hyderabad)\b",                  ["#SRH"]),
-    (r"\b(dc|delhi capitals)\b",                        ["#DC"]),
-    (r"\b(rr|rajasthan royals)\b",                      ["#RR"]),
-    (r"\b(pbks|punjab kings|kxip)\b",                   ["#PBKS"]),
+# ----------------------
+# Hashtags: fixed + dynamic-from-text (enhanced)
+# ----------------------
 
-    (r"\b(india|team india|ind)\b",                     ["#TeamIndia"]),
-    (r"\b(australia|aus)\b",                            ["#AUS"]),
-    (r"\b(england|eng)\b",                              ["#ENG"]),
-    (r"\b(pakistan|pak)\b",                             ["#PAK"]),
-    (r"\b(south africa|sa)\b",                          ["#Proteas"]),
-    (r"\b(new zealand|nz)\b",                           ["#NZ"]),
-
-    (r"\b(test match|tests)\b",                         ["#TestCricket"]),
-    (r"\b(odi|one day)\b",                              ["#ODI"]),
-    (r"\b(t20|t-?20)\b",                                ["#T20"]),
-    (r"\b(world cup|wc)\b",                             ["#WorldCup"]),
+# Leagues / tournaments
+LEAGUE_RULES = [
+    (r"\bipl\b|indian premier league", ["#IPL"]),
+    (r"\bwpl\b|women'?s premier league", ["#WPL"]),
+    (r"\bbbl\b|big bash league", ["#BBL"]),
+    (r"\bwbb?l\b|women'?s big bash", ["#WBBL"]),
+    (r"\bsa20\b", ["#SA20"]),
+    (r"\bthe hundred\b|\bhundred\b", ["#TheHundred"]),
+    (r"\bpsl\b|pakistan super league", ["#PSL"]),
+    (r"\bilt20\b|international league t20", ["#ILT20"]),
+    (r"\bcpl\b|caribbean premier league", ["#CPL"]),
+    (r"\bmlc\b|major league cricket", ["#MLC"]),
+    (r"\blpl\b|lanka premier league", ["#LPL"]),
+    (r"\bbpl\b|bangladesh premier league", ["#BPL"]),
+    (r"\b(super smash)\b", ["#SuperSmash"]),
+    (r"\bcounty championship\b|\bcounty cricket\b", ["#CountyCricket"]),
+    (r"\b(t20i)\b", ["#T20I"]),
+    (r"\bodi(s)?\b|\bone day\b", ["#ODI"]),
+    (r"\btest(s)?\b|\btest match\b", ["#TestCricket"]),
+    (r"\bworld cup\b|\bwt20\b|\bt20 world cup\b|\bwc\b", ["#WorldCup"]),
 ]
 
+# IPL teams
+IPL_TEAM_RULES = [
+    (r"\b(rcb|royal challengers|bangalore)\b", ["#RCB"]),
+    (r"\b(csk|chennai|super kings)\b", ["#CSK"]),
+    (r"\b(mi|mumbai indians)\b", ["#MI"]),
+    (r"\b(kkr|kolkata|knight riders)\b", ["#KKR"]),
+    (r"\b(srh|sunrisers|hyderabad)\b", ["#SRH"]),
+    (r"\b(dc|delhi capitals)\b", ["#DC"]),
+    (r"\b(rr|rajasthan royals)\b", ["#RR"]),
+    (r"\b(pbks|punjab kings|kxip)\b", ["#PBKS"]),
+    (r"\b(gt|gujarat titans)\b", ["#GT"]),
+    (r"\b(lsg|lucknow super giants)\b", ["#LSG"]),
+]
+
+# WPL teams
+WPL_TEAM_RULES = [
+    (r"\b(mi women|mumbai indians women)\b", ["#MI"]),
+    (r"\b(rcb women|royal challengers women)\b", ["#RCB"]),
+    (r"\b(dc women|delhi capitals women)\b", ["#DC"]),
+    (r"\b(upw|up warriorz|uttar pradesh warriorz)\b", ["#UPW"]),
+    (r"\b(gg|gujarat giants)\b", ["#GG"]),
+]
+
+# BBL teams
+BBL_TEAM_RULES = [
+    (r"\b(sydney sixers|sixers)\b", ["#BBL"]),
+    (r"\b(sydney thunder|thunder)\b", ["#BBL"]),
+    (r"\b(melbourne stars|stars)\b", ["#BBL"]),
+    (r"\b(melbourne renegades|renegades)\b", ["#BBL"]),
+    (r"\b(perth scorchers|scorchers)\b", ["#BBL"]),
+    (r"\b(adelaide strikers|strikers)\b", ["#BBL"]),
+    (r"\b(brisbane heat|heat)\b", ["#BBL"]),
+    (r"\b(hobart hurricanes|hurricanes)\b", ["#BBL"]),
+]
+
+# SA20 teams
+SA20_TEAM_RULES = [
+    (r"\b(mi cape town|micape town)\b", ["#SA20"]),
+    (r"\b(pretoria capitals)\b", ["#SA20"]),
+    (r"\b(joburg super kings)\b", ["#SA20"]),
+    (r"\b(durban'?s super giants)\b", ["#SA20"]),
+    (r"\b(sunrisers eastern cape)\b", ["#SA20"]),
+    (r"\b(parl royals)\b", ["#SA20"]),
+]
+
+# The Hundred teams (men/women names often overlap)
+HUNDRED_TEAM_RULES = [
+    (r"\b(oval invincibles)\b", ["#TheHundred"]),
+    (r"\b(london spirit)\b", ["#TheHundred"]),
+    (r"\b(northern superchargers)\b", ["#TheHundred"]),
+    (r"\b(southern brave)\b", ["#TheHundred"]),
+    (r"\b(trent rockets)\b", ["#TheHundred"]),
+    (r"\b(welsh fire)\b", ["#TheHundred"]),
+    (r"\b(birmingham phoenix)\b", ["#TheHundred"]),
+    (r"\b(manchester originals)\b", ["#TheHundred"]),
+]
+
+# International teams (token-safe patterns)
+INTL_TEAM_RULES = [
+    (r"\b(india|team\s*india)\b|(?<![a-z])ind(?![a-z])", ["#TeamIndia"]),
+    (r"\b(australia)\b|(?<![a-z])aus(?![a-z])", ["#AUS"]),
+    (r"\b(england)\b|(?<![a-z])eng(?![a-z])", ["#ENG"]),
+    (r"\b(pakistan)\b|(?<![a-z])pak(?![a-z])", ["#PAK"]),
+    (r"\b(south africa)\b|(?<![a-z])sa(?![a-z])", ["#Proteas"]),
+    (r"\b(new zealand)\b|(?<![a-z])nz(?![a-z])", ["#NZ"]),
+    (r"\b(sri lanka)\b|(?<![a-z])sl(?![a-z])", ["#SriLanka"]),
+    (r"\b(bangladesh)\b|(?<![a-z])ban(?![a-z])", ["#Bangladesh"]),
+    (r"\b(afghanistan)\b|(?<![a-z])afg(?![a-z])", ["#Afghanistan"]),
+    (r"\b(west indies)\b|(?<![a-z])wi(?![a-z])", ["#WestIndies"]),
+    (r"\b(ireland)\b|(?<![a-z])ire(?![a-z])", ["#Ireland"]),
+    (r"\b(scotland)\b|(?<![a-z])sco(?![a-z])", ["#Scotland"]),
+    (r"\b(zimbabwe)\b|(?<![a-z])zim(?![a-z])", ["#Zimbabwe"]),
+    (r"\b(nepal)\b", ["#Nepal"]),
+    (r"\b(uae)\b|\bunited arab emirates\b", ["#UAE"]),
+]
+
+# “Top” / frequently-mentioned players (50) — names + common short forms
+PLAYER_RULES = [
+    (r"\bvirat\b|\bkohli\b", ["#ViratKohli"]),
+    (r"\brohit\b|\brohit sharma\b", ["#RohitSharma"]),
+    (r"\bdhoni\b|\bmsd\b", ["#MSDhoni"]),
+    (r"\bbabar\b|\bbabar azam\b", ["#BabarAzam"]),
+    (r"\bjos buttler\b|\bbuttler\b", ["#JosButtler"]),
+    (r"\bben stokes\b|\bstokes\b", ["#BenStokes"]),
+    (r"\bjoe root\b|\broot\b", ["#JoeRoot"]),
+    (r"\bsteve smith\b|\bsmith\b", ["#SteveSmith"]),
+    (r"\bwarner\b|\bdavid warner\b", ["#DavidWarner"]),
+    (r"\b(travis head)\b|\bhead\b", ["#TravisHead"]),
+    (r"\b(glenn maxwell)\b|\bmaxwell\b", ["#GlennMaxwell"]),
+    (r"\b(pat cummins)\b|\bcummins\b", ["#PatCummins"]),
+    (r"\b(mitchell starc)\b|\bstarc\b", ["#MitchellStarc"]),
+    (r"\b(jasprit bumrah)\b|\bbumrah\b", ["#JaspritBumrah"]),
+    (r"\b(ravindra jadeja)\b|\bjadeja\b", ["#Jadeja"]),
+    (r"\b(kl rahul)\b|\brahul\b", ["#KLRahul"]),
+    (r"\b(hardik pandya)\b|\bhardik\b", ["#HardikPandya"]),
+    (r"\b(suryakumar yadav)\b|\bsurya\b|\bsky\b", ["#SuryakumarYadav"]),
+    (r"\b(rishabh pant)\b|\bpant\b", ["#RishabhPant"]),
+    (r"\b(shubman gill)\b|\bgill\b", ["#ShubmanGill"]),
+    (r"\b(yashasvi jaiswal)\b|\bjaiswal\b", ["#YashasviJaiswal"]),
+    (r"\b(mohammed shami)\b|\bshami\b", ["#MohammedShami"]),
+    (r"\b(mohammed siraj)\b|\bsiraj\b", ["#MohammedSiraj"]),
+    (r"\b(ishan kishan)\b|\bkishan\b", ["#IshanKishan"]),
+    (r"\b(ravichandran ashwin)\b|\bashwin\b", ["#Ashwin"]),
+    (r"\b(jofra archer)\b|\barcher\b", ["#JofraArcher"]),
+    (r"\b(mark wood)\b|\bwood\b", ["#MarkWood"]),
+    (r"\b(james anderson)\b|\banderson\b", ["#JamesAnderson"]),
+    (r"\b(stuart broad)\b|\bbroad\b", ["#StuartBroad"]),
+    (r"\b(kane williamson)\b|\bwilliamson\b", ["#KaneWilliamson"]),
+    (r"\b(shaheen afridi)\b|\bshaheen\b", ["#ShaheenAfridi"]),
+    (r"\b(mohammad rizwan)\b|\brizwan\b", ["#MohammadRizwan"]),
+    (r"\b(shakib al hasan)\b|\bshakib\b", ["#ShakibAlHasan"]),
+    (r"\b(mustafizur)\b|\bfizz\b", ["#MustafizurRahman"]),
+    (r"\b(rashid khan)\b|\brashid\b", ["#RashidKhan"]),
+    (r"\b(mohammad nabi)\b|\bnabi\b", ["#MohammadNabi"]),
+    (r"\b(shaib al hasan)\b", ["#ShakibAlHasan"]),  # common typo safety
+    (r"\b(trent boult)\b|\bboult\b", ["#TrentBoult"]),
+    (r"\b(lockie ferguson)\b|\blockie\b|\bferguson\b", ["#LockieFerguson"]),
+    (r"\b(kagiso rabada)\b|\brabada\b", ["#KagisoRabada"]),
+    (r"\b(quinton de kock)\b|\bde kock\b|\bqdk\b", ["#QuintonDeKock"]),
+    (r"\b(heinrich klaasen)\b|\bklaasen\b", ["#HeinrichKlaasen"]),
+    (r"\b(david miller)\b|\bmiller\b", ["#DavidMiller"]),
+    (r"\b(andre russell)\b|\brussell\b", ["#AndreRussell"]),
+    (r"\b(sunil narine)\b|\bnarine\b", ["#SunilNarine"]),
+    (r"\b(nicholas pooran)\b|\bpooran\b", ["#NicholasPooran"]),
+    (r"\b(chris gayle)\b|\bgayle\b", ["#ChrisGayle"]),
+    (r"\b(mohit sharma)\b|\bmohit\b", ["#MohitSharma"]),
+    (r"\b(shreyas iyer)\b|\bshreyas\b", ["#ShreyasIyer"]),
+    (r"\b(sanju samson)\b|\bsamson\b", ["#SanjuSamson"]),
+]
+WOMEN_PLAYER_RULES = [
+    (r"\bsmriti\b|\bsmriti mandhana\b|\bmandhana\b", ["#SmritiMandhana"]),
+    (r"\bharmanpreet\b|\bharmanpreet kaur\b", ["#HarmanpreetKaur"]),
+    (r"\bjemimah\b|\bjemimah rodrigues\b", ["#JemimahRodrigues"]),
+    (r"\bshafali\b|\bshefali\b|\bshafali verma\b", ["#ShafaliVerma"]),
+    (r"\bricha ghosh\b|\bricha\b", ["#RichaGhosh"]),
+    (r"\bdeepti\b|\bdeepti sharma\b", ["#DeeptiSharma"]),
+    (r"\brenuka\b|\brenuka singh\b|\brenuka thakur\b", ["#RenukaSingh"]),
+    (r"\bpoonam yadav\b|\bpoonam\b", ["#PoonamYadav"]),
+    (r"\byastika\b|\byastika bhatia\b", ["#YastikaBhatia"]),
+    (r"\bmeghna singh\b|\bmeghna\b", ["#MeghnaSingh"]),
+
+    (r"\bellyse perry\b|\bperry\b", ["#EllysePerry"]),
+    (r"\bmeg lanning\b|\blanning\b", ["#MegLanning"]),
+    (r"\balyssa healy\b|\bhealy\b", ["#AlyssaHealy"]),
+    (r"\bbeth mooney\b|\bmooney\b", ["#BethMooney"]),
+    (r"\bashleigh gardner\b|\bgardner\b", ["#AshleighGardner"]),
+    (r"\bannabel sutherland\b|\bsutherland\b", ["#AnnabelSutherland"]),
+
+    (r"\bsophie ecclestone\b|\becclestone\b", ["#SophieEcclestone"]),
+    (r"\bheather knight\b|\bknight\b", ["#HeatherKnight"]),
+    (r"\bnat sciver\b|\bsciver\b|\bsciver-brunt\b", ["#NatSciverBrunt"]),
+    (r"\btammy beaumont\b|\bbeaumont\b", ["#TammyBeaumont"]),
+
+    (r"\bsuzie bates\b|\bbates\b", ["#SuzieBates"]),
+    (r"\bamelia kerr\b|\bkerr\b", ["#AmeliaKerr"]),
+    (r"\bsophie devine\b|\bdevine\b", ["#SophieDevine"]),
+
+    (r"\bchamari athapaththu\b|\bathapaththu\b|\bchamari\b", ["#ChamariAthapaththu"]),
+    (r"\bbismah maroof\b|\bbismah\b", ["#BismahMaroof"]),
+]
+
+# Final combined rule list
+HASHTAG_RULES = (
+    LEAGUE_RULES
+    + IPL_TEAM_RULES
+    + WPL_TEAM_RULES
+    + BBL_TEAM_RULES
+    + SA20_TEAM_RULES
+    + HUNDRED_TEAM_RULES
+    + INTL_TEAM_RULES
+    + PLAYER_RULES
+    + WOMEN_PLAYER_RULES
+)
+
+FALLBACK_HASHTAGS = [
+    "#CricketUpdates", "#CricketHighlights", "#T20", "#ODI", "#TestCricket", "#Sports"
+]
 MAX_DYNAMIC_HASHTAGS = int(os.environ.get("MAX_DYNAMIC_HASHTAGS", "4"))
+MIN_TOTAL_HASHTAGS = int(os.environ.get("MIN_TOTAL_HASHTAGS", "7"))
+MAX_TOTAL_HASHTAGS = int(os.environ.get("MAX_TOTAL_HASHTAGS", "8"))
+FIXED_HASHTAG_COUNT = 4
+DYNAMIC_HASHTAG_COUNT = 5
+TOTAL_HASHTAGS = FIXED_HASHTAG_COUNT + DYNAMIC_HASHTAG_COUNT  # 9
 # Tuning
 SLEEP_IG_CONTAINER_MIN = float(os.environ.get("SLEEP_IG_CONTAINER_MIN", "2.5"))
 SLEEP_IG_CONTAINER_MAX = float(os.environ.get("SLEEP_IG_CONTAINER_MAX", "5.5"))
@@ -468,57 +652,158 @@ def build_hashtags_for_batch(
     tweet_data: Dict[str, Any],
 ) -> List[str]:
     """
-    Returns final hashtag list (strings like '#CSK') consisting of:
-      - FIXED_HASHTAGS (always)
-      - dynamic tags picked by scanning tweet texts for keyword matches
-    Deduped, and capped to MAX_DYNAMIC_HASHTAGS for the dynamic portion.
+    Build hashtags with deterministic bucketing:
+      - 4 fixed hashtags (first 4 from FIXED_HASHTAGS)
+      - 5 dynamic hashtags chosen consistently by buckets:
+          1) leagues (max 1)
+          2) teams   (max 2)
+          3) players (max 2)
+          4) format  (max 1)  [fills only if space left]
+    Then fill with FALLBACK_HASHTAGS if still short.
     """
-    texts = []
-    for tid in batch_ids:
-        t = tweet_data.get(tid)
-        if isinstance(t, dict):
-            txt = extract_tweet_text(t)
-            if txt:
-                texts.append(txt.lower())
 
-    blob = "\n".join(texts)
+    # ---- controls ----
+    FIXED_N = FIXED_HASHTAG_COUNT
+    DYN_N   = DYNAMIC_HASHTAG_COUNT
+    TOTAL_N = TOTAL_HASHTAGS
+    INTL_TAGS = {
+    "#teamindia","#aus","#eng","#pak","#proteas","#nz","#srilanka","#bangladesh",
+    "#afghanistan","#westindies","#ireland","#scotland","#zimbabwe","#nepal","#uae"
+    }
+    BUCKET_LIMITS = {
+    "league": 1,
+    "team": 2,
+    "intl": 1,
+    "player": 2,
+    "format": 1,
+    "other": 99,
+    }
 
-    # collect dynamic tags
-    dynamic: List[str] = []
-    for pattern, tags in HASHTAG_RULES:
-        try:
-            if re.search(pattern, blob, flags=re.IGNORECASE):
-                dynamic.extend(tags)
-        except re.error:
-            # ignore bad regex patterns rather than crashing
-            continue
-
-    # normalize/dedupe while preserving order
+    # ---- helper: normalize tag ----
     def norm_tag(x: str) -> str:
         x = (x or "").strip()
         if not x:
             return ""
         return x if x.startswith("#") else "#" + x
 
+    # ---- helper: bucket classifier (based on tag text) ----
+    # We bucket by *output hashtag*, not by regex source, so it’s robust.
+    LEAGUE_TAGS = {
+        "#ipl","#wpl","#bbl","#wbbl","#sa20","#thehundred","#psl","#ilt20","#cpl",
+        "#mlc","#lpl","#bpl","#supersmash","#countycricket","#worldcup"
+    }
+    FORMAT_TAGS = {"#t20","#t20i","#odi","#testcricket"}
+    TEAM_TAGS = {
+        "#rcb","#csk","#mi","#kkr","#srh","#dc","#rr","#pbks","#gt","#lsg","#upw","#gg"
+    }
+
+    def bucket_for(tag: str) -> str:
+        tl = tag.lower()
+        if tl in FORMAT_TAGS:
+            return "format"
+        if tl in LEAGUE_TAGS:
+            return "league"
+        if tl in TEAM_TAGS:
+            return "team"
+        if tl in INTL_TAGS:
+            return "intl"
+        # If it looks like a player name hashtag, treat as player
+        # (Most of your player tags are like #ViratKohli etc.)
+        if re.match(r"^#[A-Za-z][A-Za-z0-9]+$", tag) and tl not in LEAGUE_TAGS and tl not in TEAM_TAGS and tl not in INTL_TAGS:
+            return "player"
+        return "other"
+
+    # ---- build blob ----
+    texts = []
+    for tid in batch_ids:
+        t = tweet_data.get(tid)
+        if isinstance(t, dict):
+            txt = (t.get("full_text") or t.get("text") or "").strip()
+            if txt:
+                texts.append(txt)
+    blob = "\n".join(texts)
+
+    # ---- gather matches into buckets (preserve rule order = deterministic) ----
+    bucketed: Dict[str, List[str]] = {
+        "league": [], "team": [], "intl": [], "player": [], "format": [], "other": []
+    }
+
+    for pattern, tags in HASHTAG_RULES:
+        try:
+            if re.search(pattern, blob, flags=re.IGNORECASE):
+                for tg in tags:
+                    nt = norm_tag(tg)
+                    if nt:
+                        bucketed[bucket_for(nt)].append(nt)
+        except re.error:
+            continue
+
+    # ---- fixed ----
     seen = set()
-    fixed_out = []
-    for t in FIXED_HASHTAGS:
+    out: List[str] = []
+    for t in FIXED_HASHTAGS[:FIXED_N]:
         nt = norm_tag(t)
         if nt and nt.lower() not in seen:
-            fixed_out.append(nt)
+            out.append(nt)
             seen.add(nt.lower())
 
-    dyn_out = []
-    for t in dynamic:
-        nt = norm_tag(t)
-        if nt and nt.lower() not in seen:
-            dyn_out.append(nt)
-            seen.add(nt.lower())
+    # ---- dynamic picker by bucket priority ----
+    dyn: List[str] = []
+    bucket_priority = ["league", "team", "intl", "player", "format", "other"]
 
-    dyn_out = dyn_out[:MAX_DYNAMIC_HASHTAGS]
+    # de-dupe inside each bucket while preserving order
+    for b in bucketed:
+        uniq = []
+        for t in bucketed[b]:
+            tl = t.lower()
+            if tl not in seen and tl not in {u.lower() for u in uniq}:
+                uniq.append(t)
+        bucketed[b] = uniq
 
-    return fixed_out + dyn_out
+    for b in bucket_priority:
+        limit = BUCKET_LIMITS.get(b, 0)
+        if limit <= 0:
+            continue
+        for t in bucketed[b]:
+            if len(dyn) >= DYN_N:
+                break
+            if dyn.count(t) >= 1:
+                continue
+            if t.lower() in seen:
+                continue
+            # respect bucket limit
+            if sum(1 for x in dyn if bucket_for(x) == b) >= limit:
+                continue
+            dyn.append(t)
+            seen.add(t.lower())
+        if len(dyn) >= DYN_N:
+            break
 
+    # ---- fill remaining dynamics from fallback ----
+    if len(dyn) < DYN_N:
+        for t in FALLBACK_HASHTAGS:
+            if len(dyn) >= DYN_N:
+                break
+            nt = norm_tag(t)
+            if nt and nt.lower() not in seen:
+                dyn.append(nt)
+                seen.add(nt.lower())
+
+    out.extend(dyn[:DYN_N])
+
+    # ---- final safety: cap exact total ----
+    out = out[:TOTAL_N]
+
+    # ---- if still short (rare), keep adding fallback until TOTAL_N ----
+    if len(out) < TOTAL_N:
+        for t in FALLBACK_HASHTAGS:
+            if len(out) >= TOTAL_N:
+                break
+            nt = norm_tag(t)
+            if nt and nt.lower() not in {x.lower() for x in out}:
+                out.append(nt)
+
+    return out
 def build_caption_with_hashtags(base_caption: str, hashtags: List[str]) -> str:
     tags = " ".join(hashtags).strip()
     if not tags:
