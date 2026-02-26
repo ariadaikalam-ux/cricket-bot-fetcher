@@ -39,7 +39,7 @@ CAPTIONS = [
 # Hashtags: fixed + dynamic-from-text
 # ----------------------
 FIXED_HASHTAGS = [
-    "#cricket", "#CricketTwitter", "#IPL", "#CricketNews"
+    "#cricket", "#Cricketupdates", "#worldcup", "#CricketNews"
 ]
 # Rules: if any keyword/regex matches any tweet text in the batch,
 # add the associated hashtag(s).
